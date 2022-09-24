@@ -109,8 +109,38 @@ fn add_option(json_data: &mut Cmder) {
     }
 }
 
-fn delete_option() {
+fn delete_option(json_data: &mut Cmder) {
     println!("\n::: Delete a command :::");
+    println!("Enter command number to delete: ");
+
+    let mut command_number_input = String::new();
+    io::stdin()
+        .read_line(&mut command_number_input)
+        .expect("Enter command name");
+    let command_number = command_number_input.trim_end();
+
+    match command_number.to_lowercase().trim_end().parse::<u32>() {
+        Ok(parsed_num) => {
+            let len = json_data.commands.len() as u32;
+            if parsed_num >= 1 && parsed_num <= len {
+                println!("Deleting command");
+                let index_to_remove = parsed_num - 1;
+                json_data.commands.remove(index_to_remove as usize);
+                println!("Command deleted");
+
+                save_json_file(json_data);
+                println!("Restarting the CLI\n");
+                main();
+            } else {
+                println!("\nError! Please enter an available command");
+                delete_option(json_data);
+            }
+        }
+        Err(_) => {
+            println!("Error! Please enter an available command");
+            delete_option(json_data);
+        }
+    };
 }
 
 fn edit_option() {
@@ -184,7 +214,7 @@ fn start_command_selection(json_data: &mut Cmder) {
     let option = get_user_selected_option();
     match option.to_lowercase().trim_end() {
         "a" => add_option(json_data),
-        "d" => delete_option(),
+        "d" => delete_option(json_data),
         "e" => edit_option(),
         val => {
             match val.parse::<u32>() {
