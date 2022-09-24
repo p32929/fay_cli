@@ -15,7 +15,7 @@ struct CommandData {
 }
 
 static DUMMY_JSON: Cmder = Cmder { commands: vec![] };
-static FILEPATH: &str = "./cmderdata.json";
+static FILEPATH: &str = "./faydata.json";
 
 fn show_saved_commands(json_data: &Cmder) {
     if json_data.commands.len() == 0 {
