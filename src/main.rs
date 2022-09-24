@@ -145,6 +145,7 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
 
     for command in &commands.execs {
+        println!("\n> {}", command);
         if command.starts_with("cd ") {
             dir = command.split(" ").last().unwrap();
 
