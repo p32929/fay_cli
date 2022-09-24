@@ -22,7 +22,7 @@ fn show_saved_commands(json_data: &Cmder) {
         println!("No saved commands");
     } else {
         for (pos, data) in json_data.commands.iter().enumerate() {
-            println!("{}. {:}", pos + 1, data.name);
+            println!(">> {}. {} ", pos + 1, data.name);
         }
     }
 }
@@ -52,41 +52,30 @@ fn get_saved_json_data() -> Cmder {
 
 fn save_json_file(cmder: &Cmder) {
     let json_str = serde_json::to_string(cmder).unwrap();
-    fs::write(FILEPATH, json_str).expect("Could not wr");
-    println!("::: JSON WRITTEN :::");
-}
-
-fn get_user_selected_option() -> String {
-    let mut option = String::new();
-    io::stdin()
-        .read_line(&mut option)
-        .expect("Select an option");
-    option
+    fs::write(FILEPATH, json_str).expect("Unable to write file");
+    println!(">> JSON WRITTEN <<");
 }
 
 fn add_option(json_data: &mut Cmder) {
-    println!("\n::: Add a command :::");
-    println!("Enter command name: ");
+    println!("\n>>> Add a command <<<");
+    println!("> Enter command name: ");
     let mut name_input = String::new();
-    io::stdin()
-        .read_line(&mut name_input)
-        .expect("Enter command name");
+    io::stdin().read_line(&mut name_input).unwrap();
 
     let command_name = name_input.trim_end();
 
     match command_name {
         "" => {
-            println!("*** Please enter a name ***");
+            println!(">>> Please enter a name <<<");
             add_option(json_data);
         }
         _ => {
-            println!("\nEnter series of commands to run. Enter 0 to stop");
+            println!("\n>>> Enter series of commands <<<");
+            println!("> Enter 0 to stop");
             let mut command_array: Vec<String> = Default::default();
             loop {
                 let mut command = String::new();
-                io::stdin()
-                    .read_line(&mut command)
-                    .expect("Enter command name");
+                io::stdin().read_line(&mut command).unwrap();
 
                 match command.trim_end() {
                     "0" => break,
@@ -110,41 +99,39 @@ fn add_option(json_data: &mut Cmder) {
 }
 
 fn delete_option(json_data: &mut Cmder) {
-    println!("\n::: Delete a command :::");
-    println!("Enter command number to delete: ");
+    println!("\n>> Delete a command <<");
+    println!("> Enter command number: ");
 
     let mut command_number_input = String::new();
-    io::stdin()
-        .read_line(&mut command_number_input)
-        .expect("Enter command name");
+    io::stdin().read_line(&mut command_number_input).unwrap();
     let command_number = command_number_input.trim_end();
 
     match command_number.to_lowercase().trim_end().parse::<u32>() {
         Ok(parsed_num) => {
             let len = json_data.commands.len() as u32;
             if parsed_num >= 1 && parsed_num <= len {
-                println!("Deleting command");
+                println!("\n>> Deleting command <<");
                 let index_to_remove = parsed_num - 1;
                 json_data.commands.remove(index_to_remove as usize);
-                println!("Command deleted");
+                println!(">> Command deleted <<");
 
                 save_json_file(json_data);
-                println!("Restarting the CLI\n");
+                println!(">> Restarting the CLI <<\n");
                 main();
             } else {
-                println!("\nError! Please enter an available command");
+                println!(">> Invalid command number <<");
                 delete_option(json_data);
             }
         }
         Err(_) => {
-            println!("Error! Please enter an available command");
+            println!(">> Invalid command number <<");
             delete_option(json_data);
         }
     };
 }
 
 fn edit_option() {
-    println!("\n::: Edit a command :::");
+    println!("\n>> Edit a command <<");
 }
 
 // fn string_to_static_str(s: String) -> &'static str {
@@ -211,8 +198,10 @@ fn run_commands(commands: &CommandData) {
 }
 
 fn start_command_selection(json_data: &mut Cmder) {
-    let option = get_user_selected_option();
-    match option.to_lowercase().trim_end() {
+    let mut selected_option = String::new();
+    io::stdin().read_line(&mut selected_option).unwrap();
+
+    match selected_option.to_lowercase().trim_end() {
         "a" => add_option(json_data),
         "d" => delete_option(json_data),
         "e" => edit_option(),
@@ -241,15 +230,15 @@ fn start_command_selection(json_data: &mut Cmder) {
 
 fn main() {
     println!(":::::::::::::::::::");
-    println!(":::::: CMDER ::::::");
+    println!(">>>>>  CMDER  <<<<<");
     println!(":::::::::::::::::::");
-    println!("\n::: Run a saved command :::");
+    println!("\n> Saved commands <");
     let mut json_data: Cmder = get_saved_json_data();
     show_saved_commands(&json_data);
-    println!("\n::: Select a predefined options :::");
-    println!("a. Add a command");
-    println!("d. Delete a command");
-    println!("e. Edit a command");
+    println!("\n> Predefined options <");
+    println!(">> a. Add a command");
+    println!(">> d. Delete a command");
+    println!(">> e. Edit a command\n> ");
 
     start_command_selection(&mut json_data);
 }
