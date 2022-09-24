@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::io::Write;
 use std::process::Command;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
@@ -157,6 +156,7 @@ fn run_commands(commands: &CommandData) {
         } else {
             if just_inited_cmd {
                 proc_command.arg(command);
+                just_inited_cmd = false;
             } else {
                 proc_command = Command::new(command_types.0);
                 proc_command.arg(command_types.1);
@@ -192,7 +192,7 @@ fn start_command_selection(json_data: &mut Cmder) {
                     if parsed_num >= 1 && parsed_num <= len {
                         let index = parsed_num as usize;
                         let command_data = &json_data.commands[index - 1];
-                        println!("Running commands in {}", command_data.name);
+                        println!("Running commands in {}\n", command_data.name);
                         run_commands(command_data);
                     } else {
                         println!("\nError! Please enter an available command");
@@ -221,15 +221,4 @@ fn main() {
     println!("e. Edit a command");
 
     start_command_selection(&mut json_data);
-
-    // println!("{}", std::env::consts::OS);
-    // let windows_os = "windows";
-    // let command_types = {
-    //     if windows_os == std::env::consts::OS {
-    //         ("cmd", "/C")
-    //     } else {
-    //         ("sh", "-c")
-    //     }
-    // };
-    // println!("{:?}", command_types.0);
 }
