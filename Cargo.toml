@@ -1,7 +1,7 @@
 [package]
 name = "fay"
 description = "Will be added later"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 homepage = "https://github.com/p32929/fay_cli"
@@ -14,11 +14,8 @@ keywords = [
     "simple",
 ]
 categories = [
-    "shell",
-    "bash",
-    "cli",
-    "automation",
-    "simple",
+    "accessibility",
+    "command-line-interface"
 ]
 exclude = [".vscode/*"]
 
