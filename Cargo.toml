@@ -7,25 +7,11 @@ license = "MIT"
 homepage = "https://github.com/p32929/fay_cli"
 readme = "README.md"
 keywords = [
-    "windows",
-    "linux",
     "shell",
     "bash",
-    "rust",
     "cli",
-    "mac",
     "automation",
-    "awesome",
-    "cross-platform",
     "simple",
-    "crates",
-    "automate",
-    "cmd",
-    "intuitive",
-    "p32929",
-    "fay",
-    "run-saved-commands",
-    "shell-automation",
 ]
 categories = [
     "windows",
