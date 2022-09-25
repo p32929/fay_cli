@@ -72,7 +72,7 @@ fn add_option(json_data: &mut FayData) {
         _ => {
             println!("\n>>> Enter series of commands <<<");
             println!("> Enter 0 to stop");
-            let mut command_array: Vec<String> = Default::default();
+            let mut commands_array: Vec<String> = Default::default();
             loop {
                 let mut command = String::new();
                 io::stdin().read_line(&mut command).unwrap();
@@ -81,13 +81,13 @@ fn add_option(json_data: &mut FayData) {
                     "0" => break,
                     _ => {
                         let ss = String::from(command.trim_end());
-                        command_array.push(ss);
+                        commands_array.push(ss);
                     }
                 }
             }
             json_data.commands.push(CommandData {
                 name: String::from(command_name),
-                execs: command_array,
+                execs: commands_array,
             });
 
             save_json_file(json_data);
@@ -145,8 +145,29 @@ fn edit_option(json_data: &mut FayData) {
                 println!("\n>> Editing command <<");
                 let index_to_edit = parsed_num - 1;
                 println!("> Enter new command name: ");
-                
-                
+                let mut new_command_name = String::new();
+                io::stdin().read_line(&mut new_command_name).unwrap();
+
+                println!("\n>>> Enter new series of commands <<<");
+                println!("> Enter 0 to stop");
+                let mut new_commands_array: Vec<String> = Default::default();
+                loop {
+                    let mut command = String::new();
+                    io::stdin().read_line(&mut command).unwrap();
+
+                    match command.trim_end() {
+                        "0" => break,
+                        _ => {
+                            let ss = String::from(command.trim_end());
+                            new_commands_array.push(ss);
+                        }
+                    }
+                }
+
+                json_data.commands[index_to_edit as usize] = CommandData {
+                    name: new_command_name,
+                    execs: new_commands_array,
+                };
             } else {
                 println!(">> Invalid command number <<");
                 edit_option(json_data);
