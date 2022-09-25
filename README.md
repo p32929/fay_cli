@@ -6,11 +6,11 @@ A simple cross platform CLI app written in Rust to automate multiple shell ( bas
 
 # Installation
 ```
-crate install fay
+cargo install fay
 ```
 
 # How to use
-1. install the CLI by running `crate install fay` command
+1. install the CLI by running `cargo install fay` command
 2. Type `fay` and hit enter
 3. Follow the CLI instructions
 4. Enjoy
