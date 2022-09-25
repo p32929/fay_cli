@@ -14,25 +14,11 @@ keywords = [
     "simple",
 ]
 categories = [
-    "windows",
-    "linux",
     "shell",
     "bash",
-    "rust",
     "cli",
-    "mac",
     "automation",
-    "awesome",
-    "cross-platform",
     "simple",
-    "crates",
-    "automate",
-    "cmd",
-    "intuitive",
-    "p32929",
-    "fay",
-    "run-saved-commands",
-    "shell-automation",
 ]
 exclude = [".vscode/*"]
 
