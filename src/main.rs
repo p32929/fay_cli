@@ -4,7 +4,7 @@ use std::io;
 use std::process::Command;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
-struct Cmder {
+struct FayData {
     commands: Vec<CommandData>,
 }
 
@@ -14,10 +14,10 @@ struct CommandData {
     execs: Vec<String>,
 }
 
-static DUMMY_JSON: Cmder = Cmder { commands: vec![] };
+static DUMMY_JSON: FayData = FayData { commands: vec![] };
 static FILEPATH: &str = "./faydata.json";
 
-fn show_saved_commands(json_data: &Cmder) {
+fn show_saved_commands(json_data: &FayData) {
     if json_data.commands.len() == 0 {
         println!("No saved commands");
     } else {
@@ -27,12 +27,12 @@ fn show_saved_commands(json_data: &Cmder) {
     }
 }
 
-fn get_saved_json_data() -> Cmder {
+fn get_saved_json_data() -> FayData {
     let file_content = fs::read_to_string(FILEPATH);
     let _json;
     match file_content {
         Ok(file_content) => {
-            match serde_json::from_str::<Cmder>(&file_content) {
+            match serde_json::from_str::<FayData>(&file_content) {
                 Ok(json_data) => {
                     _json = json_data;
                 }
@@ -50,13 +50,13 @@ fn get_saved_json_data() -> Cmder {
     _json
 }
 
-fn save_json_file(cmder: &Cmder) {
+fn save_json_file(cmder: &FayData) {
     let json_str = serde_json::to_string(cmder).unwrap();
     fs::write(FILEPATH, json_str).expect("Unable to write file");
     println!(">> JSON WRITTEN <<");
 }
 
-fn add_option(json_data: &mut Cmder) {
+fn add_option(json_data: &mut FayData) {
     println!("\n>>> Add a command <<<");
     println!("> Enter command name: ");
     let mut name_input = String::new();
@@ -98,7 +98,7 @@ fn add_option(json_data: &mut Cmder) {
     }
 }
 
-fn delete_option(json_data: &mut Cmder) {
+fn delete_option(json_data: &mut FayData) {
     println!("\n>> Delete a command <<");
     println!("> Enter command number: ");
 
@@ -130,8 +130,33 @@ fn delete_option(json_data: &mut Cmder) {
     };
 }
 
-fn edit_option() {
+fn edit_option(json_data: &mut FayData) {
     println!("\n>> Edit a command <<");
+    println!("> Enter command number: ");
+
+    let mut command_number_input = String::new();
+    io::stdin().read_line(&mut command_number_input).unwrap();
+    let command_number = command_number_input.trim_end();
+
+    match command_number.to_lowercase().trim_end().parse::<u32>() {
+        Ok(parsed_num) => {
+            let len = json_data.commands.len() as u32;
+            if parsed_num >= 1 && parsed_num <= len {
+                println!("\n>> Editing command <<");
+                let index_to_edit = parsed_num - 1;
+                println!("> Enter new command name: ");
+                
+                
+            } else {
+                println!(">> Invalid command number <<");
+                edit_option(json_data);
+            }
+        }
+        Err(_) => {
+            println!(">> Invalid command number <<");
+            edit_option(json_data);
+        }
+    };
 }
 
 // fn string_to_static_str(s: String) -> &'static str {
@@ -197,14 +222,14 @@ fn run_commands(commands: &CommandData) {
     }
 }
 
-fn start_command_selection(json_data: &mut Cmder) {
+fn start_command_selection(json_data: &mut FayData) {
     let mut selected_option = String::new();
     io::stdin().read_line(&mut selected_option).unwrap();
 
     match selected_option.to_lowercase().trim_end() {
         "a" => add_option(json_data),
         "d" => delete_option(json_data),
-        "e" => edit_option(),
+        "e" => edit_option(json_data),
         val => {
             match val.parse::<u32>() {
                 Ok(parsed_num) => {
@@ -212,15 +237,15 @@ fn start_command_selection(json_data: &mut Cmder) {
                     if parsed_num >= 1 && parsed_num <= len {
                         let index = parsed_num as usize;
                         let command_data = &json_data.commands[index - 1];
-                        println!("Running commands in {}\n", command_data.name);
+                        println!(">>> Running commands in {} <<<\n", command_data.name);
                         run_commands(command_data);
                     } else {
-                        println!("\nError! Please enter an available command");
+                        println!("\n>> Invalid command number <<");
                         start_command_selection(json_data);
                     }
                 }
                 Err(_) => {
-                    println!("Error! Please enter an available command");
+                    println!("\n>> Invalid command number <<");
                     start_command_selection(json_data);
                 }
             };
@@ -230,10 +255,10 @@ fn start_command_selection(json_data: &mut Cmder) {
 
 fn main() {
     println!(":::::::::::::::::::");
-    println!(">>>>>  CMDER  <<<<<");
+    println!(">>>>>>  Fay  <<<<<<");
     println!(":::::::::::::::::::");
     println!("\n> Saved commands <");
-    let mut json_data: Cmder = get_saved_json_data();
+    let mut json_data: FayData = get_saved_json_data();
     show_saved_commands(&json_data);
     println!("\n> Predefined options <");
     println!(">> a. Add a command");
