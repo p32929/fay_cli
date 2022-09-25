@@ -100,39 +100,51 @@ fn add_option(json_data: &mut FayData) {
 
 fn delete_option(json_data: &mut FayData) {
     println!("\n>> Delete a command <<");
-    println!("> Enter command number: ");
+    if json_data.commands.is_empty() {
+        println!("> No commands to delete ");
+        println!(">> Restarting the CLI <<\n");
+        main();
+    } else {
+        println!("> Enter command number: ");
 
-    let mut command_number_input = String::new();
-    io::stdin().read_line(&mut command_number_input).unwrap();
-    let command_number = command_number_input.trim_end();
+        let mut command_number_input = String::new();
+        io::stdin().read_line(&mut command_number_input).unwrap();
+        let command_number = command_number_input.trim_end();
 
-    match command_number.to_lowercase().trim_end().parse::<u32>() {
-        Ok(parsed_num) => {
-            let len = json_data.commands.len() as u32;
-            if parsed_num >= 1 && parsed_num <= len {
-                println!("\n>> Deleting command <<");
-                let index_to_remove = parsed_num - 1;
-                json_data.commands.remove(index_to_remove as usize);
-                println!(">> Command deleted <<");
+        match command_number.to_lowercase().trim_end().parse::<u32>() {
+            Ok(parsed_num) => {
+                let len = json_data.commands.len() as u32;
+                if parsed_num >= 1 && parsed_num <= len {
+                    println!("\n>> Deleting command <<");
+                    let index_to_remove = parsed_num - 1;
+                    json_data.commands.remove(index_to_remove as usize);
+                    println!(">> Command deleted <<");
 
-                save_json_file(json_data);
-                println!(">> Restarting the CLI <<\n");
-                main();
-            } else {
+                    save_json_file(json_data);
+                    println!(">> Restarting the CLI <<\n");
+                    main();
+                } else {
+                    println!(">> Invalid command number <<");
+                    delete_option(json_data);
+                }
+            }
+            Err(_) => {
                 println!(">> Invalid command number <<");
                 delete_option(json_data);
             }
-        }
-        Err(_) => {
-            println!(">> Invalid command number <<");
-            delete_option(json_data);
-        }
-    };
+        };
+    }
 }
 
 fn edit_option(json_data: &mut FayData) {
     println!("\n>> Edit a command <<");
-    println!("> Enter command number: ");
+    if json_data.commands.is_empty() {
+        println!("> No commands to edit ");
+        println!(">> Restarting the CLI <<\n");
+        main();
+    }
+    else {
+        println!("> Enter command number: ");
 
     let mut command_number_input = String::new();
     io::stdin().read_line(&mut command_number_input).unwrap();
@@ -183,6 +195,7 @@ fn edit_option(json_data: &mut FayData) {
             edit_option(json_data);
         }
     };
+    }
 }
 
 // fn string_to_static_str(s: String) -> &'static str {
