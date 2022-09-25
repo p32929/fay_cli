@@ -209,7 +209,6 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    println!("Current: {}", std::env::consts::OS);
     let windows_os = "windows";
     let command_types = {
         if windows_os == std::env::consts::OS {
@@ -276,7 +275,7 @@ fn start_command_selection(json_data: &mut FayData) {
                     if parsed_num >= 1 && parsed_num <= len {
                         let index = parsed_num as usize;
                         let command_data = &json_data.commands[index - 1];
-                        println!(">>> Running commands in {} <<<\n", command_data.name);
+                        println!(">>> Running commands in \"{}\" <<<", command_data.name);
                         run_commands(command_data);
                     } else {
                         println!("\n>> Invalid command number <<");
