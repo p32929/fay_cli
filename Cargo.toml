@@ -7,6 +7,9 @@ homepage = "https://github.com/p32929/fay_cli"
 readme = "README.md"
 keywords = []
 categories = []
+exclude = [
+    ".vscode/*"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
