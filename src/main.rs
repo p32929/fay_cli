@@ -168,6 +168,11 @@ fn edit_option(json_data: &mut FayData) {
                     name: new_command_name,
                     execs: new_commands_array,
                 };
+
+                save_json_file(json_data);
+                println!(">> Command updated <<");
+                println!(">> Restarting the CLI <<\n");
+                main();
             } else {
                 println!(">> Invalid command number <<");
                 edit_option(json_data);
