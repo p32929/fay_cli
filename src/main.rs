@@ -53,7 +53,7 @@ fn get_saved_json_data() -> FayData {
 fn save_json_file(cmder: &FayData) {
     let json_str = serde_json::to_string(cmder).unwrap();
     fs::write(FILEPATH, json_str).expect("Unable to write file");
-    println!(">> JSON WRITTEN <<");
+    // println!(">> JSON WRITTEN <<");
 }
 
 fn add_option(json_data: &mut FayData) {
