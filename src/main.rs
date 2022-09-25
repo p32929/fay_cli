@@ -101,7 +101,7 @@ fn add_option(json_data: &mut FayData) {
 fn delete_option(json_data: &mut FayData) {
     println!("\n>> Delete a command <<");
     if json_data.commands.is_empty() {
-        println!("> No commands to delete ");
+        println!(">> No commands to delete <<");
         println!(">> Restarting the CLI <<\n");
         main();
     } else {
@@ -139,7 +139,7 @@ fn delete_option(json_data: &mut FayData) {
 fn edit_option(json_data: &mut FayData) {
     println!("\n>> Edit a command <<");
     if json_data.commands.is_empty() {
-        println!("> No commands to edit ");
+        println!(">> No commands to edit <<");
         println!(">> Restarting the CLI <<\n");
         main();
     }
