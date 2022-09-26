@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use miniserde::{json, Serialize, Deserialize};
 use std::fs;
 use std::io;
 use std::process::Command;
@@ -32,7 +32,7 @@ fn get_saved_json_data() -> FayData {
     let _json;
     match file_content {
         Ok(file_content) => {
-            match serde_json::from_str::<FayData>(&file_content) {
+            match json::from_str::<FayData>(&file_content) {
                 Ok(json_data) => {
                     _json = json_data;
                 }
@@ -51,7 +51,7 @@ fn get_saved_json_data() -> FayData {
 }
 
 fn save_json_file(cmder: &FayData) {
-    let json_str = serde_json::to_string(cmder).unwrap();
+    let json_str = json::to_string(cmder);
     fs::write(FILEPATH, json_str).expect("Unable to write file");
     // println!(">> JSON WRITTEN <<");
 }
