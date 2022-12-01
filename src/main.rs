@@ -33,7 +33,9 @@ fn get_saved_json_data() -> FayData {
     let dummy_json_values: FayData = FayData { commands: vec![] };
     let file_content = fs::read_to_string(FILEPATH).unwrap_or(String::from(""));
     let json_data = json::from_str::<FayData>(&file_content).unwrap_or(dummy_json_values);
-    save_json_file(&json_data);
+    if file_content.is_empty() {
+        save_json_file(&json_data);
+    }
     json_data
 
     // let file_content = fs::read_to_string(FILEPATH);
@@ -254,15 +256,15 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            let child = proc_command.spawn();
-            match child {
-                Ok(mut child) => {
-                    if let Err(error) = child.wait() {
-                        eprintln!("{}", error);
-                    }
-                }
-                Err(error) => eprintln!("{}", error),
-            }
+            // let child = proc_command.spawn();
+            // match child {
+            //     Ok(mut child) => {
+            //         if let Err(error) = child.wait() {
+            //             eprintln!("{}", error);
+            //         }
+            //     }
+            //     Err(error) => eprintln!("{}", error),
+            // }
         }
     }
 }
@@ -318,37 +320,16 @@ fn start_command_selection(fay_data: &mut FayData) {
 }
 
 fn main() {
-    // println!(":::::::::::::::::::");
-    // println!(">>>>>>  Fay  <<<<<<");
-    // println!(":::::::::::::::::::");
-    // println!("\n> Saved commands <");
+    println!(":::::::::::::::::::");
+    println!(">>>>>>  Fay  <<<<<<");
+    println!(":::::::::::::::::::");
+    println!("\n> Saved commands <");
     let mut fay_data: FayData = get_saved_json_data();
-    // show_saved_commands(&fay_data);
-    // println!("\n> Predefined options <");
-    // println!(">> a. Add a command");
-    // println!(">> d. Delete a command");
-    // println!(">> e. Edit a command\n> ");
+    show_saved_commands(&fay_data);
+    println!("\n> Predefined options <");
+    println!(">> a. Add a command");
+    println!(">> d. Delete a command");
+    println!(">> e. Edit a command\n> ");
 
-    // start_command_selection(&mut fay_data);
-
-    let windows_os = "windows";
-    let command_types = {
-        if windows_os == std::env::consts::OS {
-            ("cmd", "/C")
-        } else {
-            ("sh", "-c")
-        }
-    };
-
-    let mut proc_command = Command::new(command_types.0);
-    proc_command.arg(command_types.1);
-    proc_command.current_dir(&fay_data.commands[0].execs[0].split(" ").last().unwrap());
-    proc_command.arg(&fay_data.commands[0].execs[1]);
-    let mut proc = InteractiveProcess::new(proc_command, |line| {
-        println!("Got: {}", line.unwrap());
-    })
-    .unwrap();
-
-    proc.send("data1").unwrap();
-    sleep(Duration::from_secs(1));
+    start_command_selection(&mut fay_data);
 }
