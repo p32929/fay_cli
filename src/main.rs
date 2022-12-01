@@ -229,8 +229,12 @@ fn run_commands(commands: &CommandData) {
     let mut proc_command = Command::new(command_types.0);
     proc_command.arg(command_types.1);
 
-    let mut just_inited_cmd = false;
     let mut dir = "";
+    let mut just_inited_cmd = false;
+
+    let mut child_command;
+    let mut child;
+    let mut is_stdin = false;
 
     for command in &commands.execs {
         println!("\n> {}", command);
@@ -255,18 +259,12 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            let child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
-
-            let child = child_command.spawn();
+            child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
+            child = child_command.spawn();
 
             match child {
                 Ok(mut child) => {
-                    // if let Err(error) = child.wait() {
-                    //     eprintln!("{}", error);
-                    // }
-                    println!("S: {}", child_command.status().unwrap());
-                    println!("SS: {}", child_command.status().unwrap().success());
-                    println!("I: {}", child.id());
+                    is_stdin = child_command.status().unwrap().success();
 
                     let mut stdin = child.stdin.take().expect("Failed to open stdin");
                     std::thread::spawn(move || {
@@ -275,9 +273,9 @@ fn run_commands(commands: &CommandData) {
                             .expect("Failed to write to stdin");
                     });
                     let output = child.wait_with_output().expect("Failed to read stdout");
-                    println!("O: {}", String::from_utf8_lossy(&output.stdout));
+                    println!("{}", String::from_utf8_lossy(&output.stdout));
                 }
-                Err(error) => eprintln!("E: {}", error),
+                Err(error) => eprintln!("{}", error),
             }
         }
     }
