@@ -6,8 +6,15 @@ version = 3
 name = "fay"
 version = "0.1.5"
 dependencies = [
+ "interactive_process",
  "miniserde",
 ]
+
+[[package]]
+name = "interactive_process"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5bea3f0b65ff4df5241d0d586df4ab529b7584ee9ada2ad163ab756032733b9"
 
 [[package]]
 name = "itoa"

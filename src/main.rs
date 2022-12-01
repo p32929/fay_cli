@@ -1,8 +1,11 @@
+use interactive_process::InteractiveProcess;
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::process;
 use std::process::Command;
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -213,55 +216,55 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    // let windows_os = "windows";
-    // let command_types = {
-    //     if windows_os == std::env::consts::OS {
-    //         ("cmd", "/C")
-    //     } else {
-    //         ("sh", "-c")
-    //     }
-    // };
+    let windows_os = "windows";
+    let command_types = {
+        if windows_os == std::env::consts::OS {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        }
+    };
 
-    // let mut proc_command = Command::new(command_types.0);
-    // proc_command.arg(command_types.1);
+    let mut proc_command = Command::new(command_types.0);
+    proc_command.arg(command_types.1);
 
-    // let mut just_inited_cmd = false;
-    // let mut dir = "";
+    let mut just_inited_cmd = false;
+    let mut dir = "";
 
-    // for command in &commands.execs {
-    //     println!("\n> {}", command);
-    //     if command.starts_with("cd ") {
-    //         dir = command.split(" ").last().unwrap();
+    for command in &commands.execs {
+        println!("\n> {}", command);
+        if command.starts_with("cd ") {
+            dir = command.split(" ").last().unwrap();
 
-    //         proc_command = Command::new(command_types.0);
-    //         proc_command.arg(command_types.1);
-    //         proc_command.current_dir(dir);
+            proc_command = Command::new(command_types.0);
+            proc_command.arg(command_types.1);
+            proc_command.current_dir(dir);
 
-    //         just_inited_cmd = true;
-    //     } else {
-    //         if just_inited_cmd {
-    //             proc_command.arg(command);
-    //             just_inited_cmd = false;
-    //         } else {
-    //             proc_command = Command::new(command_types.0);
-    //             proc_command.arg(command_types.1);
-    //             if dir != "" {
-    //                 proc_command.current_dir(dir);
-    //             }
-    //             proc_command.arg(command);
-    //         }
+            just_inited_cmd = true;
+        } else {
+            if just_inited_cmd {
+                proc_command.arg(command);
+                just_inited_cmd = false;
+            } else {
+                proc_command = Command::new(command_types.0);
+                proc_command.arg(command_types.1);
+                if dir != "" {
+                    proc_command.current_dir(dir);
+                }
+                proc_command.arg(command);
+            }
 
-    //         let child = proc_command.spawn();
-    //         match child {
-    //             Ok(mut child) => {
-    //                 if let Err(error) = child.wait() {
-    //                     eprintln!("{}", error);
-    //                 }
-    //             }
-    //             Err(error) => eprintln!("{}", error),
-    //         }
-    //     }
-    // }
+            let child = proc_command.spawn();
+            match child {
+                Ok(mut child) => {
+                    if let Err(error) = child.wait() {
+                        eprintln!("{}", error);
+                    }
+                }
+                Err(error) => eprintln!("{}", error),
+            }
+        }
+    }
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
@@ -315,16 +318,37 @@ fn start_command_selection(fay_data: &mut FayData) {
 }
 
 fn main() {
-    println!(":::::::::::::::::::");
-    println!(">>>>>>  Fay  <<<<<<");
-    println!(":::::::::::::::::::");
-    println!("\n> Saved commands <");
+    // println!(":::::::::::::::::::");
+    // println!(">>>>>>  Fay  <<<<<<");
+    // println!(":::::::::::::::::::");
+    // println!("\n> Saved commands <");
     let mut fay_data: FayData = get_saved_json_data();
-    show_saved_commands(&fay_data);
-    println!("\n> Predefined options <");
-    println!(">> a. Add a command");
-    println!(">> d. Delete a command");
-    println!(">> e. Edit a command\n> ");
+    // show_saved_commands(&fay_data);
+    // println!("\n> Predefined options <");
+    // println!(">> a. Add a command");
+    // println!(">> d. Delete a command");
+    // println!(">> e. Edit a command\n> ");
 
-    start_command_selection(&mut fay_data);
+    // start_command_selection(&mut fay_data);
+
+    let windows_os = "windows";
+    let command_types = {
+        if windows_os == std::env::consts::OS {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        }
+    };
+
+    let mut proc_command = Command::new(command_types.0);
+    proc_command.arg(command_types.1);
+    proc_command.current_dir(&fay_data.commands[0].execs[0].split(" ").last().unwrap());
+    proc_command.arg(&fay_data.commands[0].execs[1]);
+    let mut proc = InteractiveProcess::new(proc_command, |line| {
+        println!("Got: {}", line.unwrap());
+    })
+    .unwrap();
+
+    proc.send("data1").unwrap();
+    sleep(Duration::from_secs(1));
 }
