@@ -2,8 +2,10 @@ use interactive_process::InteractiveProcess;
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::Write;
 use std::process;
 use std::process::Command;
+use std::process::Stdio;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -256,15 +258,28 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            // let child = proc_command.spawn();
-            // match child {
-            //     Ok(mut child) => {
-            //         if let Err(error) = child.wait() {
-            //             eprintln!("{}", error);
-            //         }
-            //     }
-            //     Err(error) => eprintln!("{}", error),
-            // }
+            let child = proc_command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn();
+
+            match child {
+                Ok(mut child) => {
+                    // if let Err(error) = child.wait() {
+                    //     eprintln!("{}", error);
+                    // }
+
+                    let mut stdin = child.stdin.take().expect("Failed to open stdin");
+                    std::thread::spawn(move || {
+                        stdin
+                            .write_all("Hello, world!".as_bytes())
+                            .expect("Failed to write to stdin");
+                    });
+                    let output = child.wait_with_output().expect("Failed to read stdout");
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+                Err(error) => eprintln!("{}", error),
+            }
         }
     }
 }
