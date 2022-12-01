@@ -1,4 +1,3 @@
-use interactive_process::InteractiveProcess;
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
@@ -6,8 +5,6 @@ use std::io::Write;
 use std::process;
 use std::process::Command;
 use std::process::Stdio;
-use std::thread::sleep;
-use std::time::Duration;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -258,16 +255,16 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            let child = proc_command
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .spawn();
+            let child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
+
+            let child = child_command.spawn();
 
             match child {
                 Ok(mut child) => {
                     // if let Err(error) = child.wait() {
                     //     eprintln!("{}", error);
                     // }
+                    print!("{}", child_command.status().unwrap());
 
                     let mut stdin = child.stdin.take().expect("Failed to open stdin");
                     std::thread::spawn(move || {

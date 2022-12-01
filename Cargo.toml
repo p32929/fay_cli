@@ -23,4 +23,3 @@ exclude = [".vscode/*"]
 
 [dependencies]
 miniserde = "0.1.27"
-interactive_process = "0.1.2"
