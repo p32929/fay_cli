@@ -233,8 +233,6 @@ fn run_commands(commands: &CommandData) {
 
     let mut just_inited_cmd = false;
     let mut dir = "";
-    let mut child = None;
-    let mut is_success = false;
 
     for command in &commands.execs {
         println!("\n> {}", command);
@@ -259,32 +257,14 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            let child = child.get_or_insert_with(|| {
-                let child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
-                child_command.spawn()
-            });
-
-            if is_success {
-                match child {
-                    Ok(child) => {
-                        is_success = proc_command.status().unwrap().success();
-                        let output = child.stdout.as_mut().expect("Hello");
-                        println!("{}", std::io::read_to_string(output).unwrap_or(String::from("")).as_str());
+            let child = proc_command.spawn();
+            match child {
+                Ok(mut child) => {
+                    if let Err(error) = child.wait() {
+                        eprintln!("{}", error);
                     }
-                    Err(error) => eprintln!("{}", error),
                 }
-            } else {
-                match child {
-                    Ok(child) => {
-                        let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
-                        stdin
-                            .write_all("Hello, world!".as_bytes())
-                            .expect("Failed to write to stdin");
-                        let output = child.stdout.as_mut().expect("Hello");
-                        println!("{}", std::io::read_to_string(output).unwrap_or(String::from("")).as_str());
-                    }
-                    Err(error) => eprintln!("{}", error),
-                }
+                Err(error) => eprintln!("{}", error),
             }
         }
     }
