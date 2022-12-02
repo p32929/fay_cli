@@ -1,8 +1,10 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::Error;
 use std::io::Write;
 use std::process;
+use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -17,6 +19,12 @@ struct CommandData {
     execs: Vec<String>,
 }
 static FILEPATH: &str = "./faydata.json";
+
+enum CommandTypes {
+    CD,
+    INPUT,
+    DONE,
+}
 
 fn show_saved_commands(fay_data: &FayData) {
     if fay_data.commands.len() == 0 {
@@ -210,12 +218,6 @@ fn edit_option(json_data: &mut FayData) {
 //     Box::leak(s.into_boxed_str())
 // }
 
-// fn get_new_command() -> &Command {
-//     let command = Command::new("cmd");
-//     command.arg("/C");
-//     &command
-// }
-
 fn run_commands(commands: &CommandData) {
     let windows_os = "windows";
     let command_types = {
@@ -229,12 +231,8 @@ fn run_commands(commands: &CommandData) {
     let mut proc_command = Command::new(command_types.0);
     proc_command.arg(command_types.1);
 
-    let mut dir = "";
     let mut just_inited_cmd = false;
-
-    let mut child_command;
-    let mut child;
-    let mut is_stdin = false;
+    let mut dir = "";
 
     for command in &commands.execs {
         println!("\n> {}", command);
@@ -259,27 +257,161 @@ fn run_commands(commands: &CommandData) {
                 proc_command.arg(command);
             }
 
-            child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
-            child = child_command.spawn();
-
+            let child = proc_command.spawn();
             match child {
                 Ok(mut child) => {
-                    is_stdin = child_command.status().unwrap().success();
-
-                    let mut stdin = child.stdin.take().expect("Failed to open stdin");
-                    std::thread::spawn(move || {
-                        stdin
-                            .write_all("Hello, world!".as_bytes())
-                            .expect("Failed to write to stdin");
-                    });
-                    let output = child.wait_with_output().expect("Failed to read stdout");
-                    println!("{}", String::from_utf8_lossy(&output.stdout));
+                    if let Err(error) = child.wait() {
+                        eprintln!("{}", error);
+                    }
                 }
                 Err(error) => eprintln!("{}", error),
             }
         }
     }
 }
+
+// Try2
+// fn run_commands(commands: &CommandData) {
+//     let windows_os = "windows";
+//     let command_types = {
+//         if windows_os == std::env::consts::OS {
+//             ("cmd", "/C")
+//         } else {
+//             ("sh", "-c")
+//         }
+//     };
+
+//     let mut child_process_vec: Vec<Result<Child, Error>> = vec![];
+//     let mut is_last_success = true;
+//     let mut dir = "";
+
+//     for command in &commands.execs {
+//         println!("\n> {}", command);
+
+//         if command.starts_with("cd ") {
+//             dir = command.split(" ").last().unwrap_or("");
+//         }
+
+//         let mut proc_command = Command::new(command_types.0);
+//         proc_command.arg(command_types.1);
+//         proc_command
+//             .stdin(Stdio::piped())
+//             .stdout(Stdio::piped())
+//             .stderr(Stdio::piped());
+
+//         if !dir.is_empty() {
+//             proc_command.current_dir(dir);
+//         }
+//         proc_command.arg(command);
+
+//         if is_last_success {
+//             let child_process = proc_command.spawn();
+//             match child_process {
+//                 Ok(child) => {
+//                     let output = child.wait_with_output().expect("Failed to read stdout");
+//                     is_last_success = proc_command
+//                         .status()
+//                         .expect("Failed to verify command status")
+//                         .success();
+//                     println!("{}", String::from_utf8_lossy(&output.stdout));
+
+//                     if !is_last_success {
+//                         child_process_vec.push(child_process);
+//                     }
+//                 }
+//                 Err(error) => eprintln!("{}", error),
+//             }
+//         } else {
+//             let last_input_command = child_process_vec.last().expect("no input commands");
+//             match last_input_command {
+//                 Ok(mut child) => {}
+//                 Err(error) => eprintln!("{}", error),
+//             }
+//         }
+//     }
+// }
+
+// Try1
+// fn run_commands(commands: &CommandData) {
+//     let windows_os = "windows";
+//     let command_types = {
+//         if windows_os == std::env::consts::OS {
+//             ("cmd", "/C")
+//         } else {
+//             ("sh", "-c")
+//         }
+//     };
+
+//     let mut proc_command = Command::new(command_types.0);
+//     proc_command.arg(command_types.1);
+
+//     let mut dir = "";
+//     let mut just_inited_cmd = false;
+
+//     let mut child_command;
+//     let mut child;
+//     let mut is_stdin = false;
+
+//     for command in &commands.execs {
+//         println!("\n> {}", command);
+//         if command.starts_with("cd ") {
+//             dir = command.split(" ").last().unwrap();
+
+//             proc_command = Command::new(command_types.0);
+//             proc_command.arg(command_types.1);
+//             proc_command.current_dir(dir);
+
+//             just_inited_cmd = true;
+//         } else {
+//             if just_inited_cmd {
+//                 proc_command.arg(command);
+//                 just_inited_cmd = false;
+//             } else {
+//                 proc_command = Command::new(command_types.0);
+//                 proc_command.arg(command_types.1);
+//                 if dir != "" {
+//                     proc_command.current_dir(dir);
+//                 }
+//                 proc_command.arg(command);
+//             }
+
+//             if is_stdin {
+//                 child_command = proc_command.stdin(Stdio::piped()).stdout(Stdio::piped());
+//                 child = child_command.spawn();
+
+//                 match child {
+//                     Ok(mut child) => {
+//                         is_stdin = child_command.status().unwrap().success();
+
+//                         let mut stdin = child.stdin.take().expect("Failed to open stdin");
+//                         std::thread::spawn(move || {
+//                             stdin
+//                                 .write_all("Hello, world!".as_bytes())
+//                                 .expect("Failed to write to stdin");
+//                         });
+//                         let output = child.wait_with_output().expect("Failed to read stdout");
+//                         println!("{}", String::from_utf8_lossy(&output.stdout));
+//                     }
+//                     Err(error) => eprintln!("{}", error),
+//                 }
+//             } else {
+//                 match child {
+//                     Ok(mut child) => {
+//                         let mut stdin = child.stdin.take().expect("Failed to open stdin");
+//                         std::thread::spawn(move || {
+//                             stdin
+//                                 .write_all("Hello, world!".as_bytes())
+//                                 .expect("Failed to write to stdin");
+//                         });
+//                         let output = child.wait_with_output().expect("Failed to read stdout");
+//                         println!("{}", String::from_utf8_lossy(&output.stdout));
+//                     }
+//                     Err(error) => eprintln!("{}", error),
+//                 }
+//             }
+//         }
+//     }
+// }
 
 fn start_command_selection(fay_data: &mut FayData) {
     let mut selected_option = String::new();
