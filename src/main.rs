@@ -211,20 +211,20 @@ fn edit_option(json_data: &mut FayData) {
                 }
             }
 
-            let final_command_array = if new_commands_array.len() > 0 {
+            let final_command_array = if new_commands_array.len() == 0 {
                 old_commands.clone()
             } else {
                 new_commands_array
             };
 
-            let final_command_name = if new_command_name.is_empty() {
-                old_name.clone()
+            let final_command_name = if new_command_name.trim_end().is_empty() {
+                String::from(old_name.clone())
             } else {
-                new_command_name
+                String::from(new_command_name.trim_end())
             };
 
             json_data.commands[index_to_edit as usize] = CommandData {
-                name: String::from(final_command_name),
+                name: final_command_name,
                 execs: final_command_array,
             };
 
@@ -323,7 +323,7 @@ fn start_command_selection(fay_data: &mut FayData) {
                 run_commands(command_data);
             } else {
                 println!("\n>> Invalid command number <<");
-                process::exit(404);
+                start_command_selection(fay_data);
             }
         }
     }
