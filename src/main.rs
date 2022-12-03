@@ -5,9 +5,7 @@ use std::io::Error;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
-// use crate::io::prelude::*;
 use std::io::prelude::*;
-use std::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
