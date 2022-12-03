@@ -1,10 +1,12 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::io::Write;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
+// use crate::io::prelude::*;
+use std::io::prelude::*;
+use std::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -255,11 +257,6 @@ fn edit_option(json_data: &mut FayData) {
 //     Box::leak(s.into_boxed_str())
 // }
 
-fn show_command_output(child: Child) {
-    let output = child.wait_with_output().expect("Failed to read stdout");
-    println!("{}", String::from_utf8_lossy(&output.stdout));
-}
-
 fn run_commands(commands: &CommandData) {
     let windows_os = "windows";
     let command_types = {
@@ -270,47 +267,57 @@ fn run_commands(commands: &CommandData) {
         }
     };
 
+    let mut proc_command = Command::new(command_types.0);
+    proc_command.arg(command_types.1);
+
+    let mut just_inited_cmd = false;
     let mut dir = "";
-    let mut is_last_success = true;
-    let mut last_child_process = None;
 
     for command in &commands.execs {
         println!("\n> {}", command);
         if command.starts_with("cd ") {
-            dir = command.split(" ").last().unwrap_or("");
-        }
+            dir = command.split(" ").last().unwrap();
 
-        let mut proc_command = Command::new(command_types.0);
-        proc_command.arg(command_types.1);
-        if !dir.is_empty() {
+            proc_command = Command::new(command_types.0);
+            proc_command.arg(command_types.1);
             proc_command.current_dir(dir);
-        }
-        proc_command.arg(command);
 
-        let child_res = last_child_process.get_or_insert_with(|| {
-            let child_command = proc_command
+            just_inited_cmd = true;
+        } else {
+            if just_inited_cmd {
+                proc_command.arg(command);
+                just_inited_cmd = false;
+            } else {
+                proc_command = Command::new(command_types.0);
+                proc_command.arg(command_types.1);
+                if dir != "" {
+                    proc_command.current_dir(dir);
+                }
+                proc_command.arg(command);
+            }
+
+            let child = proc_command
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-            child_command.spawn()
-        });
+                .spawn();
 
-        match child_res {
-            Ok(child) => {
-                //
+            match child {
+                Ok(mut child) => {
+                    // if let Err(error) = child.wait() {
+                    //     eprintln!("{}", error);
+                    // }
+
+                    let mut stdin = child.stdin.take().expect("Failed to open stdin");
+                    std::thread::spawn(move || {
+                        stdin
+                            .write_all("Hello, world!".as_bytes())
+                            .expect("Failed to write to stdin");
+                    });
+                    let output = child.wait_with_output().expect("Failed to read stdout");
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+                Err(error) => eprintln!("{}", error),
             }
-            Err(error) => {
-                eprintln!("EEE: {}", error)
-            }
-        }
-
-        is_last_success = proc_command
-            .status()
-            .expect("Failed to verify command status")
-            .success();
-
-        if is_last_success {
-            last_child_process = None;
         }
     }
 }
