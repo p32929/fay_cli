@@ -294,10 +294,6 @@ fn run_commands(commands: &CommandData) {
             proc_command.current_dir(dir);
         }
 
-        // let spawned_res = spawned_res_gl.get_or_insert_with(|| {
-        //     proc_command.spawn()
-        // });
-
         let spawned_res = proc_command.spawn();
 
         match spawned_res {
