@@ -286,15 +286,19 @@ fn run_commands(commands: &CommandData) {
         }
 
         proc_command.arg(command);
-
-        let spawned = proc_command
+        proc_command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn();
+            .stderr(Stdio::piped());
 
-        match spawned {
+        let spawned_res = proc_command.spawn();
+        match spawned_res {
             Ok(mut child) => {
+                // if let Err(error) = child.wait() {
+                //     eprintln!("{}", error);
+                // }
+                // print!("{}", child_command.status().unwrap());
+
                 let mut stdin = child.stdin.take().expect("Failed to open stdin");
                 std::thread::spawn(move || {
                     stdin
