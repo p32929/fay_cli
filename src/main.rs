@@ -1,11 +1,11 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::prelude::*;
 use std::io::Error;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
-use std::io::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -269,7 +269,7 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
     let mut proc_command: Command = Command::new(command_types.0);
     let mut is_last_success = true;
-    let mut last_spawned_res: Result<Child, Error>;
+    let mut spawned_res = proc_command.spawn();
     proc_command.arg(command_types.1);
 
     for command in &commands.execs {
@@ -295,6 +295,7 @@ fn run_commands(commands: &CommandData) {
         }
 
         let spawned_res = proc_command.spawn();
+        
         match spawned_res {
             Ok(mut child) => {
                 if is_last_success {
@@ -311,7 +312,7 @@ fn run_commands(commands: &CommandData) {
                 }
 
                 is_last_success = proc_command.status().expect("STERR").success();
-            }
+            },
             Err(error) => eprintln!("{}", error),
         }
     }
