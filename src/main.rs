@@ -295,8 +295,6 @@ fn run_commands(commands: &CommandData) {
 
         match spawned {
             Ok(mut child) => {
-                print!("{}", proc_command.status().unwrap());
-
                 let mut stdin = child.stdin.take().expect("Failed to open stdin");
                 std::thread::spawn(move || {
                     stdin
