@@ -1,7 +1,10 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::Write;
+use std::process::Child;
 use std::process::Command;
+use std::process::Stdio;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -252,6 +255,11 @@ fn edit_option(json_data: &mut FayData) {
 //     Box::leak(s.into_boxed_str())
 // }
 
+fn show_command_output(child: Child) {
+    let output = child.wait_with_output().expect("Failed to read stdout");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+}
+
 fn run_commands(commands: &CommandData) {
     let windows_os = "windows";
     let command_types = {
@@ -262,51 +270,56 @@ fn run_commands(commands: &CommandData) {
         }
     };
 
-    let mut proc_command = Command::new(command_types.0);
-    proc_command.arg(command_types.1);
-
-    let mut just_inited_cmd = false;
     let mut dir = "";
+    let mut is_last_success = true;
+    let mut last_child_process = None;
 
     for command in &commands.execs {
         println!("\n> {}", command);
         if command.starts_with("cd ") {
             dir = command.split(" ").last().unwrap_or("");
+        }
 
-            proc_command = Command::new(command_types.0);
-            proc_command.arg(command_types.1);
+        let mut proc_command = Command::new(command_types.0);
+        proc_command.arg(command_types.1);
+        if !dir.is_empty() {
             proc_command.current_dir(dir);
+        }
+        proc_command.arg(command);
 
-            just_inited_cmd = true;
-        } else {
-            if just_inited_cmd {
-                proc_command.arg(command);
-                just_inited_cmd = false;
-            } else {
-                proc_command = Command::new(command_types.0);
-                proc_command.arg(command_types.1);
-                if dir != "" {
-                    proc_command.current_dir(dir);
-                }
-                proc_command.arg(command);
-            }
+        let child_res = last_child_process.get_or_insert_with(|| {
+            let child_command = proc_command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+            child_command.spawn()
+        });
 
-            let child = proc_command.spawn();
-            match child {
-                Ok(mut child) => {
-                    if let Err(error) = child.wait() {
-                        eprintln!("{}", error);
-                    }
-                }
-                Err(error) => eprintln!("{}", error),
+        match child_res {
+            Ok(child) => {
+                //
             }
+            Err(error) => {
+                eprintln!("EEE: {}", error)
+            }
+        }
+
+        is_last_success = proc_command
+            .status()
+            .expect("Failed to verify command status")
+            .success();
+
+        if is_last_success {
+            last_child_process = None;
         }
     }
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
     let mut selected_option = String::new();
-    io::stdin().read_line(&mut selected_option).expect(INPUT_STRING_ERROR_MESSAGE);
+    io::stdin()
+        .read_line(&mut selected_option)
+        .expect(INPUT_STRING_ERROR_MESSAGE);
 
     match selected_option.to_lowercase().trim_end() {
         "a" => add_option(fay_data),
