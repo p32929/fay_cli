@@ -267,58 +267,35 @@ fn run_commands(commands: &CommandData) {
         }
     };
 
-    let mut proc_command = Command::new(command_types.0);
-    proc_command.arg(command_types.1);
-
     let mut just_inited_cmd = false;
     let mut dir = "";
+    let mut proc_command: Command;
 
     for command in &commands.execs {
         println!("\n> {}", command);
+
         if command.starts_with("cd ") {
-            dir = command.split(" ").last().unwrap();
-
-            proc_command = Command::new(command_types.0);
-            proc_command.arg(command_types.1);
-            proc_command.current_dir(dir);
-
-            just_inited_cmd = true;
-        } else {
-            if just_inited_cmd {
-                proc_command.arg(command);
-                just_inited_cmd = false;
-            } else {
-                proc_command = Command::new(command_types.0);
-                proc_command.arg(command_types.1);
-                if dir != "" {
-                    proc_command.current_dir(dir);
-                }
-                proc_command.arg(command);
-            }
-
-            let child = proc_command
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .spawn();
-
-            match child {
-                Ok(mut child) => {
-                    // if let Err(error) = child.wait() {
-                    //     eprintln!("{}", error);
-                    // }
-
-                    let mut stdin = child.stdin.take().expect("Failed to open stdin");
-                    std::thread::spawn(move || {
-                        stdin
-                            .write_all("Hello, world!".as_bytes())
-                            .expect("Failed to write to stdin");
-                    });
-                    let output = child.wait_with_output().expect("Failed to read stdout");
-                    print!("{}", String::from_utf8_lossy(&output.stdout));
-                }
-                Err(error) => eprintln!("{}", error),
-            }
+            dir = command.split(" ").last().unwrap_or("");
         }
+
+        proc_command = Command::new(command_types.0);
+        proc_command.arg(command_types.1);
+
+        if !dir.is_empty() {
+            proc_command.current_dir(dir);
+        }
+
+        proc_command.arg(command);
+
+        let spawned = proc_command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn();
+
+        let output = spawned.unwrap().wait_with_output().expect("Failed to read stdout");
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+        
     }
 }
 
