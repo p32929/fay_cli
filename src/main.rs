@@ -1,6 +1,7 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::Error;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
@@ -270,6 +271,7 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
     let mut proc_command: Command = Command::new(command_types.0);
     let mut is_last_success = true;
+    let mut last_spawned_res: Result<Child, Error>;
     proc_command.arg(command_types.1);
 
     for command in &commands.execs {
@@ -282,26 +284,37 @@ fn run_commands(commands: &CommandData) {
         if is_last_success {
             proc_command = Command::new(command_types.0);
             proc_command.arg(command_types.1);
-
-            if !dir.is_empty() {
-                proc_command.current_dir(dir);
-            }
-
             proc_command.arg(command);
+
             proc_command
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
+        }
 
-            let spawned_res = proc_command.spawn();
-            match spawned_res {
-                Ok(child) => {
+        if !dir.is_empty() {
+            proc_command.current_dir(dir);
+        }
+
+        let spawned_res = proc_command.spawn();
+        match spawned_res {
+            Ok(mut child) => {
+                if is_last_success {
                     let output = child.wait_with_output().expect("Failed to read stdout");
                     print!("{}", String::from_utf8_lossy(&output.stdout));
-                    is_last_success = proc_command.status().expect("STERR").success();
+                } else {
+                    let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+                    stdin
+                        .write_all(command.as_bytes())
+                        .expect("Failed to write to stdin");
+
+                    let output = child.wait_with_output().expect("Failed to read stdout");
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
                 }
-                Err(error) => eprintln!("{}", error),
+
+                is_last_success = proc_command.status().expect("STERR").success();
             }
+            Err(error) => eprintln!("{}", error),
         }
     }
 }
