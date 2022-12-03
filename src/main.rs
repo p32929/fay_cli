@@ -269,7 +269,6 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
     let mut proc_command: Command = Command::new(command_types.0);
     let mut is_last_success = true;
-    let mut spawned_res = proc_command.spawn();
     proc_command.arg(command_types.1);
 
     for command in &commands.execs {
