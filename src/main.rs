@@ -267,9 +267,10 @@ fn run_commands(commands: &CommandData) {
         }
     };
 
-    let mut just_inited_cmd = false;
     let mut dir = "";
-    let mut proc_command: Command;
+    let mut proc_command: Command = Command::new(command_types.0);
+    let mut is_last_success = true;
+    proc_command.arg(command_types.1);
 
     for command in &commands.execs {
         println!("\n> {}", command);
@@ -278,37 +279,29 @@ fn run_commands(commands: &CommandData) {
             dir = command.split(" ").last().unwrap_or("");
         }
 
-        proc_command = Command::new(command_types.0);
-        proc_command.arg(command_types.1);
+        if is_last_success {
+            proc_command = Command::new(command_types.0);
+            proc_command.arg(command_types.1);
 
-        if !dir.is_empty() {
-            proc_command.current_dir(dir);
-        }
-
-        proc_command.arg(command);
-        proc_command
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-
-        let spawned_res = proc_command.spawn();
-        match spawned_res {
-            Ok(mut child) => {
-                // if let Err(error) = child.wait() {
-                //     eprintln!("{}", error);
-                // }
-                // print!("{}", child_command.status().unwrap());
-
-                let mut stdin = child.stdin.take().expect("Failed to open stdin");
-                std::thread::spawn(move || {
-                    stdin
-                        .write_all("Hello, world!".as_bytes())
-                        .expect("Failed to write to stdin");
-                });
-                let output = child.wait_with_output().expect("Failed to read stdout");
-                print!("{}", String::from_utf8_lossy(&output.stdout));
+            if !dir.is_empty() {
+                proc_command.current_dir(dir);
             }
-            Err(error) => eprintln!("{}", error),
+
+            proc_command.arg(command);
+            proc_command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+
+            let spawned_res = proc_command.spawn();
+            match spawned_res {
+                Ok(child) => {
+                    let output = child.wait_with_output().expect("Failed to read stdout");
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
+                    is_last_success = proc_command.status().expect("STERR").success();
+                }
+                Err(error) => eprintln!("{}", error),
+            }
         }
     }
 }
