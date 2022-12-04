@@ -2,7 +2,6 @@ use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::io::Write;
-use std::process::ChildStdin;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -268,7 +267,6 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
     let mut proc_command: Command = Command::new(command_types.0);
     let mut is_last_success = true;
-    let mut stdin: &mut ChildStdin;
 
     proc_command.arg(command_types.1);
 
@@ -302,7 +300,7 @@ fn run_commands(commands: &CommandData) {
                     let output = child.wait_with_output().expect("Failed to read stdout");
                     print!("{}", String::from_utf8_lossy(&output.stdout));
                 } else {
-                    stdin = child.stdin.as_mut().expect("Failed to open stdin");
+                    let stdin = child.stdin.as_mut().expect("Failed to open stdin");
                     stdin
                         .write_all(command.as_bytes())
                         .expect("Failed to write to stdin");
