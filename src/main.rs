@@ -1,7 +1,9 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
+use std::io::Error;
 use std::io::Write;
+use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -267,6 +269,7 @@ fn run_commands(commands: &CommandData) {
     let mut dir = "";
     let mut proc_command: Command = Command::new(command_types.0);
     let mut is_last_success = true;
+    let mut spawned_res_vec: Vec<Result<Child, Error>> = vec![];
 
     proc_command.arg(command_types.1);
 
@@ -292,7 +295,12 @@ fn run_commands(commands: &CommandData) {
             proc_command.current_dir(dir);
         }
 
-        let spawned_res = proc_command.spawn();
+        let spawned_res = if is_last_success {
+            proc_command.spawn()
+        }
+        else {
+            spawned_res_vec.pop().unwrap() 
+        };
 
         match spawned_res {
             Ok(mut child) => {
@@ -310,6 +318,9 @@ fn run_commands(commands: &CommandData) {
                 }
 
                 is_last_success = proc_command.status().expect("STERR").success();
+                if is_last_success {
+                    spawned_res_vec.push(spawned_res)
+                }
             },
             Err(error) => eprintln!("{}", error),
         }
