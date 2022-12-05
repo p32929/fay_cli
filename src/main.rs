@@ -68,8 +68,8 @@ impl CommandSpawn {
         self.command.status().expect("STERR").success()
     }
 
-    pub fn input(self, input: &str) {
-        let mut stdin = self.spawned_child.stdin.expect("Failed to open stdin");
+    pub fn input(&mut self, input: &str) {
+        let stdin = self.spawned_child.stdin.as_mut().expect("Failed to open stdin");
         stdin
             .write_all(input.as_bytes())
             .expect("Failed to write to stdin");
@@ -338,8 +338,9 @@ fn run_commands(commands: &CommandData) {
             cosp.renew_command(dir);
             cosp.spawn_command(command);
         } else {
+            cosp.input(command);
         }
-        // cosp.show_output();
+        cosp.show_output();
     }
 }
 
