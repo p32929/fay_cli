@@ -17,6 +17,74 @@ struct CommandData {
     name: String,
     execs: Vec<String>,
 }
+
+struct Spawned {
+    command: Command,
+    spawned_result_option: Option<Result<Child, Error>>,
+}
+
+impl Spawned {
+    pub fn new() -> Spawned {
+        let windows_os = "windows";
+        let command_types = {
+            if windows_os == std::env::consts::OS {
+                ("cmd", "/C")
+            } else {
+                ("sh", "-c")
+            }
+        };
+
+        let mut proc_command = Command::new(command_types.0);
+        proc_command.arg(command_types.1);
+
+        proc_command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        Spawned {
+            command: proc_command,
+            spawned_result_option: None,
+        }
+    }
+
+    pub fn set_dir(&mut self, dir: &str) {
+        self.command.current_dir(dir);
+    }
+
+    pub fn spawn(mut self, command_str: &str) {
+        self.command.arg(command_str);
+        self.spawned_result_option = Some(self.command.spawn());
+    }
+
+    pub fn get_spawned_child(self) -> Child {
+        let child = self.spawned_result_option.unwrap().unwrap();
+        child
+    }
+
+    pub fn show_output(self) {
+        let child = self.get_spawned_child();
+        let output = child.wait_with_output().expect("Failed to read stdout");
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+    }
+
+    pub fn input_value(self, input_value: &str) {
+        let mut child = self.get_spawned_child();
+        let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+        stdin
+            .write_all(input_value.as_bytes())
+            .expect("Failed to write to stdin");
+
+        let output = child.wait_with_output().expect("Failed to read stdout");
+        print!("{}", String::from_utf8_lossy(&output.stdout));
+    }
+
+    pub fn is_successful(mut self) -> bool {
+        let success = self.command.status().expect("STERR").success();
+        success
+    }
+}
+
 const FILEPATH: &str = "./faydata.json";
 const INPUT_STRING_ERROR_MESSAGE: &str = "Please enter a valid string";
 const INPUT_NUMBER_ERROR_MESSAGE: &str = "Please enter a valid number";
@@ -257,74 +325,73 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    let windows_os = "windows";
-    let command_types = {
-        if windows_os == std::env::consts::OS {
-            ("cmd", "/C")
-        } else {
-            ("sh", "-c")
-        }
-    };
+    // let windows_os = "windows";
+    // let command_types = {
+    //     if windows_os == std::env::consts::OS {
+    //         ("cmd", "/C")
+    //     } else {
+    //         ("sh", "-c")
+    //     }
+    // };
 
     let mut dir = "";
-    let mut proc_command: Command = Command::new(command_types.0);
-    let mut is_last_success = true;
-    let mut spawned_res_vec: Vec<Result<Child, Error>> = vec![];
+    // let mut proc_command: Command = Command::new(command_types.0);
+    // let mut is_last_success = true;
+    // let mut spawned_res_vec: Vec<Result<Child, Error>> = vec![];
 
-    proc_command.arg(command_types.1);
+    // proc_command.arg(command_types.1);
 
-    for command in &commands.execs {
-        println!("\n> {}", command);
+    // for command in &commands.execs {
+    //     println!("\n> {}", command);
 
-        if command.starts_with("cd ") {
-            dir = command.split(" ").last().unwrap_or("");
-        }
+    //     if command.starts_with("cd ") {
+    //         dir = command.split(" ").last().unwrap_or("");
+    //     }
 
-        if is_last_success {
-            proc_command = Command::new(command_types.0);
-            proc_command.arg(command_types.1);
-            proc_command.arg(command);
+    //     if is_last_success {
+    //         proc_command = Command::new(command_types.0);
+    //         proc_command.arg(command_types.1);
+    //         proc_command.arg(command);
 
-            proc_command
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-        }
+    //         proc_command
+    //             .stdin(Stdio::piped())
+    //             .stdout(Stdio::piped())
+    //             .stderr(Stdio::piped());
+    //     }
 
-        if !dir.is_empty() {
-            proc_command.current_dir(dir);
-        }
+    //     if !dir.is_empty() {
+    //         proc_command.current_dir(dir);
+    //     }
 
-        let spawned_res = if is_last_success {
-            proc_command.spawn()
-        }
-        else {
-            spawned_res_vec.pop().unwrap() 
-        };
+    //     let spawned_res = if is_last_success {
+    //         proc_command.spawn()
+    //     } else {
+    //         spawned_res_vec.pop().unwrap()
+    //     };
 
-        match spawned_res {
-            Ok(mut child) => {
-                if is_last_success {
-                    let output = child.wait_with_output().expect("Failed to read stdout");
-                    print!("{}", String::from_utf8_lossy(&output.stdout));
-                } else {
-                    let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-                    stdin
-                        .write_all(command.as_bytes())
-                        .expect("Failed to write to stdin");
+    //     match spawned_res {
+    //         Ok(mut child) => {
+    //             if is_last_success {
+    //                 let output = child.wait_with_output().expect("Failed to read stdout");
+    //                 print!("{}", String::from_utf8_lossy(&output.stdout));
+    //             } else {
+    //                 let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+    //                 stdin
+    //                     .write_all(command.as_bytes())
+    //                     .expect("Failed to write to stdin");
 
-                    let output = child.wait_with_output().expect("Failed to read stdout");
-                    print!("{}", String::from_utf8_lossy(&output.stdout));
-                }
+    //                 let output = child.wait_with_output().expect("Failed to read stdout");
+    //                 print!("{}", String::from_utf8_lossy(&output.stdout));
+    //             }
 
-                is_last_success = proc_command.status().expect("STERR").success();
-                if is_last_success {
-                    spawned_res_vec.push(spawned_res)
-                }
-            },
-            Err(error) => eprintln!("{}", error),
-        }
-    }
+    //             // is_last_success = proc_command.status().expect("STERR").success();
+    //             // if is_last_success {
+    //             //     spawned_res_vec.push(spawned_res)
+    //             // }
+    //         }
+    //         Err(error) => eprintln!("{}", error),
+    //     }
+    // }
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
