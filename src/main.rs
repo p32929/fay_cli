@@ -1,7 +1,6 @@
 use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::io::Error;
 use std::io::Write;
 use std::process::Child;
 use std::process::Command;
@@ -18,70 +17,70 @@ struct CommandData {
     execs: Vec<String>,
 }
 
-struct Spawned {
+struct CommandSpawn {
     command: Command,
-    spawned_result_option: Option<Result<Child, Error>>,
+    spawned_child: Child,
 }
 
-impl Spawned {
-    pub fn new() -> Spawned {
-        let windows_os = "windows";
-        let command_types = {
-            if windows_os == std::env::consts::OS {
-                ("cmd", "/C")
-            } else {
-                ("sh", "-c")
-            }
-        };
+fn make_command() -> Command {
+    let windows_os = "windows";
+    let command_types = {
+        if windows_os == std::env::consts::OS {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        }
+    };
 
-        let mut proc_command = Command::new(command_types.0);
-        proc_command.arg(command_types.1);
+    let mut proc_command = Command::new(command_types.0);
+    proc_command.arg(command_types.1);
+    proc_command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    proc_command
+}
 
-        proc_command
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+impl CommandSpawn {
+    pub fn new() -> CommandSpawn {
+        let mut proc_command = make_command();
+        let child = proc_command.spawn().unwrap();
 
-        Spawned {
+        CommandSpawn {
             command: proc_command,
-            spawned_result_option: None,
+            spawned_child: child,
         }
     }
 
-    pub fn set_dir(&mut self, dir: &str) {
-        self.command.current_dir(dir);
+    pub fn renew_command(&mut self, dir: &str) {
+        self.command = make_command();
+        if !dir.is_empty() {
+            self.command.current_dir(dir);
+        }
     }
 
-    pub fn spawn(mut self, command_str: &str) {
-        self.command.arg(command_str);
-        self.spawned_result_option = Some(self.command.spawn());
+    pub fn spawn_command(&mut self, command: &str) {
+        self.command.arg(command);
+        self.spawned_child = self.command.spawn().unwrap();
     }
 
-    pub fn get_spawned_child(self) -> Child {
-        let child = self.spawned_result_option.unwrap().unwrap();
-        child
+    pub fn is_command_success(&mut self) -> bool {
+        self.command.status().expect("STERR").success()
+    }
+
+    pub fn input(self, input: &str) {
+        let mut stdin = self.spawned_child.stdin.expect("Failed to open stdin");
+        stdin
+            .write_all(input.as_bytes())
+            .expect("Failed to write to stdin");
     }
 
     pub fn show_output(self) {
-        let child = self.get_spawned_child();
-        let output = child.wait_with_output().expect("Failed to read stdout");
+        let output = self
+            .spawned_child
+            .wait_with_output()
+            .expect("Failed to read stdout");
         print!("{}", String::from_utf8_lossy(&output.stdout));
-    }
-
-    pub fn input_value(self, input_value: &str) {
-        let mut child = self.get_spawned_child();
-        let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        stdin
-            .write_all(input_value.as_bytes())
-            .expect("Failed to write to stdin");
-
-        let output = child.wait_with_output().expect("Failed to read stdout");
-        print!("{}", String::from_utf8_lossy(&output.stdout));
-    }
-
-    pub fn is_successful(mut self) -> bool {
-        let success = self.command.status().expect("STERR").success();
-        success
     }
 }
 
@@ -325,73 +324,23 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    // let windows_os = "windows";
-    // let command_types = {
-    //     if windows_os == std::env::consts::OS {
-    //         ("cmd", "/C")
-    //     } else {
-    //         ("sh", "-c")
-    //     }
-    // };
-
     let mut dir = "";
-    // let mut proc_command: Command = Command::new(command_types.0);
-    // let mut is_last_success = true;
-    // let mut spawned_res_vec: Vec<Result<Child, Error>> = vec![];
+    let mut cosp = CommandSpawn::new();
 
-    // proc_command.arg(command_types.1);
+    for command in &commands.execs {
+        println!("\n> {}", command);
 
-    // for command in &commands.execs {
-    //     println!("\n> {}", command);
+        if command.starts_with("cd ") {
+            dir = command.split(" ").last().unwrap_or("");
+        }
 
-    //     if command.starts_with("cd ") {
-    //         dir = command.split(" ").last().unwrap_or("");
-    //     }
-
-    //     if is_last_success {
-    //         proc_command = Command::new(command_types.0);
-    //         proc_command.arg(command_types.1);
-    //         proc_command.arg(command);
-
-    //         proc_command
-    //             .stdin(Stdio::piped())
-    //             .stdout(Stdio::piped())
-    //             .stderr(Stdio::piped());
-    //     }
-
-    //     if !dir.is_empty() {
-    //         proc_command.current_dir(dir);
-    //     }
-
-    //     let spawned_res = if is_last_success {
-    //         proc_command.spawn()
-    //     } else {
-    //         spawned_res_vec.pop().unwrap()
-    //     };
-
-    //     match spawned_res {
-    //         Ok(mut child) => {
-    //             if is_last_success {
-    //                 let output = child.wait_with_output().expect("Failed to read stdout");
-    //                 print!("{}", String::from_utf8_lossy(&output.stdout));
-    //             } else {
-    //                 let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-    //                 stdin
-    //                     .write_all(command.as_bytes())
-    //                     .expect("Failed to write to stdin");
-
-    //                 let output = child.wait_with_output().expect("Failed to read stdout");
-    //                 print!("{}", String::from_utf8_lossy(&output.stdout));
-    //             }
-
-    //             // is_last_success = proc_command.status().expect("STERR").success();
-    //             // if is_last_success {
-    //             //     spawned_res_vec.push(spawned_res)
-    //             // }
-    //         }
-    //         Err(error) => eprintln!("{}", error),
-    //     }
-    // }
+        if cosp.is_command_success() {
+            cosp.renew_command(dir);
+            cosp.spawn_command(command);
+        } else {
+        }
+        // cosp.show_output();
+    }
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
