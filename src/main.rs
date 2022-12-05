@@ -17,9 +17,9 @@ struct CommandData {
     execs: Vec<String>,
 }
 
-struct CommandSpawn {
+struct CommandChild {
     command: Command,
-    spawned_child: Child,
+    spawned_child: Option<Child>,
 }
 
 fn make_command() -> Command {
@@ -41,14 +41,14 @@ fn make_command() -> Command {
     proc_command
 }
 
-impl CommandSpawn {
-    pub fn new() -> CommandSpawn {
-        let mut proc_command = make_command();
-        let child = proc_command.spawn().unwrap();
+impl CommandChild {
+    pub fn new() -> CommandChild {
+        // let proc_command = ;
+        // let child = proc_command.spawn().unwrap();
 
-        CommandSpawn {
-            command: proc_command,
-            spawned_child: child,
+        CommandChild {
+            command: make_command(),
+            spawned_child: None,
         }
     }
 
@@ -61,26 +61,44 @@ impl CommandSpawn {
 
     pub fn spawn_command(&mut self, command: &str) {
         self.command.arg(command);
-        self.spawned_child = self.command.spawn().unwrap();
+        self.spawned_child = Some(self.command.spawn().unwrap());
     }
 
     pub fn is_command_success(&mut self) -> bool {
-        self.command.status().expect("STERR").success()
+        let status = self.command.status();
+        match status {
+            Ok(st) => {
+                return st.success();
+            }
+            Err(_) => {
+                return false;
+            }
+        }
+
+        // .expect("STERR")
     }
 
     pub fn input(&mut self, input: &str) {
-        let stdin = self.spawned_child.stdin.as_mut().expect("Failed to open stdin");
-        stdin
-            .write_all(input.as_bytes())
-            .expect("Failed to write to stdin");
+        match &self.spawned_child {
+            Some(child) => {
+                let mut stdin = child.stdin.as_ref().expect("Failed to open stdin");
+                stdin
+                    .write_all(input.as_bytes())
+                    .expect("Failed to write to stdin");
+            }
+            None => todo!(),
+        }
     }
 
-    pub fn show_output(self) {
-        let output = self
-            .spawned_child
-            .wait_with_output()
-            .expect("Failed to read stdout");
-        print!("{}", String::from_utf8_lossy(&output.stdout));
+    pub fn show_output(&self) {
+        // let output = self.spawned_child.unwrap().stdout.as_mut().expect("Hello");
+
+        // let output = self
+        //     .spawned_child
+        //     .unwrap()
+        //     .wait_with_output()
+        //     .expect("Failed to read stdout");
+        // print!("{}", String::from_utf8_lossy(&output.stdout));
     }
 }
 
@@ -325,7 +343,7 @@ fn edit_option(json_data: &mut FayData) {
 
 fn run_commands(commands: &CommandData) {
     let mut dir = "";
-    let mut cosp = CommandSpawn::new();
+    let mut command_child = CommandChild::new();
 
     for command in &commands.execs {
         println!("\n> {}", command);
@@ -334,13 +352,13 @@ fn run_commands(commands: &CommandData) {
             dir = command.split(" ").last().unwrap_or("");
         }
 
-        if cosp.is_command_success() {
-            cosp.renew_command(dir);
-            cosp.spawn_command(command);
+        if command_child.is_command_success() {
+            command_child.renew_command(dir);
+            command_child.spawn_command(command);
         } else {
-            cosp.input(command);
+            command_child.input(command);
         }
-        cosp.show_output();
+        command_child.show_output();
     }
 }
 
