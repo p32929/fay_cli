@@ -69,7 +69,7 @@ impl CommandChild {
                     .write_all(value.as_bytes())
                     .expect("Failed to write to stdin");
             }
-            Err(_) => todo!(),
+            Err(error) => eprintln!("{}", error),
         }
     }
 
