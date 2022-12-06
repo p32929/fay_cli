@@ -6,6 +6,7 @@ use std::io::Error;
 use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
+use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -73,17 +74,12 @@ impl CommandChild {
     }
 
     fn show_output(&mut self) {
-        match &self.shared_child {
-            Ok(child) => {
-                let output = child.take_stdout().expect("Hello");
-                println!(
-                    "{}",
-                    std::io::read_to_string(output)
-                        .unwrap_or(String::from(""))
-                        .as_str()
-                );
+        let output = self.command.output();
+        match output {
+            Ok(output) => {
+                println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
             }
-            Err(_) => todo!(),
+            Err(error) => eprintln!("{}", error),
         }
     }
 
@@ -343,6 +339,7 @@ fn run_commands(commands: &CommandData) {
             command_child.set_dir(dir);
 
             if command_child.is_last_success() {
+                command_child = CommandChild::new();
                 command_child.spawn(command);
                 command_child.show_output();
                 is_last_iter_input = false;
