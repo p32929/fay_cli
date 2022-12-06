@@ -55,7 +55,9 @@ impl CommandChild {
     }
 
     fn set_dir(&mut self, dir: &str) {
-        self.command.current_dir(dir);
+        if !dir.is_empty() {
+            self.command.current_dir(dir);
+        }
     }
 
     fn input_value(&mut self, value: &str) {
@@ -332,15 +334,27 @@ fn edit_option(json_data: &mut FayData) {
 fn run_commands(commands: &CommandData) {
     let mut command_child = CommandChild::new();
     let mut dir = "";
+    let mut is_last_iter_input = false;
 
     for command in &commands.execs {
         if command.starts_with("cd ") {
             dir = command.split(" ").last().unwrap();
         }
 
+        command_child.set_dir(dir);
+
         if command_child.is_last_success() {
-            
+            command_child.spawn(command);
+            command_child.show_output();
+            is_last_iter_input = false;
+        } else {
+            is_last_iter_input = true;
+            command_child.input_value(&command);
         }
+    }
+
+    if is_last_iter_input {
+        command_child.show_output();
     }
 }
 
