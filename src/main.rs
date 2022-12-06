@@ -62,10 +62,14 @@ impl CommandChild {
 
     fn input_value(&mut self, value: &str) {
         let child = self.shared_child.as_mut().unwrap();
-        let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        stdin
-            .write_all(value.as_bytes())
-            .expect("Failed to write to stdin");
+        let mut stdin = child.stdin.take().expect("Failed to open stdin");
+        let static_val = string_to_static_str(String::from(value));
+
+        std::thread::spawn(move || {
+            stdin
+                .write_all(string_to_static_str(static_val.to_string()).as_bytes())
+                .expect("Failed to write to stdin");
+        });
     }
 
     fn show_output(&mut self) {
@@ -318,9 +322,9 @@ fn edit_option(json_data: &mut FayData) {
     }
 }
 
-// fn string_to_static_str(s: String) -> &'static str {
-//     Box::leak(s.into_boxed_str())
-// }
+fn string_to_static_str(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
+}
 
 fn run_commands(commands: &CommandData) {
     let mut command_child = CommandChild::new();
