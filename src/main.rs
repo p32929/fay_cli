@@ -339,17 +339,17 @@ fn run_commands(commands: &CommandData) {
     for command in &commands.execs {
         if command.starts_with("cd ") {
             dir = command.split(" ").last().unwrap();
-        }
-
-        command_child.set_dir(dir);
-
-        if command_child.is_last_success() {
-            command_child.spawn(command);
-            command_child.show_output();
-            is_last_iter_input = false;
         } else {
-            is_last_iter_input = true;
-            command_child.input_value(&command);
+            command_child.set_dir(dir);
+
+            if command_child.is_last_success() {
+                command_child.spawn(command);
+                command_child.show_output();
+                is_last_iter_input = false;
+            } else {
+                command_child.input_value(&command);
+                is_last_iter_input = true;
+            }
         }
     }
 
