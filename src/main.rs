@@ -2,6 +2,7 @@ use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::io::Error;
+use std::io::Write;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
@@ -60,22 +61,18 @@ impl CommandChild {
     }
 
     fn input_value(&mut self, value: &str) {
-        match &self.shared_child {
-            Ok(child) => {
-                // let mut stdin = child.take_stdin().expect("Failed to open stdin");
-                // stdin
-                //     .write_all(value.as_bytes())
-                //     .expect("Failed to write to stdin");
-            }
-            Err(error) => eprintln!("{}", error),
-        }
+        let child = self.shared_child.as_mut().unwrap();
+        let mut stdin = child.stdin.as_mut().expect("Failed to open stdin");
+        stdin
+            .write_all(value.as_bytes())
+            .expect("Failed to write to stdin");
     }
 
     fn show_output(&mut self) {
         let output = self.command.output();
         match output {
             Ok(output) => {
-                println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+                println!(">> OUTPUT:\n{}", String::from_utf8_lossy(&output.stdout));
             }
             Err(error) => eprintln!("{}", error),
         }
