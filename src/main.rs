@@ -2,11 +2,9 @@ use miniserde::{json, Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::io::Error;
-use std::io::Write;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
-use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -50,42 +48,41 @@ impl CommandChild {
     }
 
     fn spawn(&mut self, arg: &String) {
-        // self.command.arg(arg);
-        // let child = SharedChild::spawn(&mut self.command);
-        // self.shared_child = child;
+        self.command.arg(arg);
+        let child = self.command.spawn();
+        self.shared_child = child;
     }
 
     fn set_dir(&mut self, dir: &str) {
-        // if !dir.is_empty() {
-        //     self.command.current_dir(dir);
-        // }
+        if !dir.is_empty() {
+            self.command.current_dir(dir);
+        }
     }
 
     fn input_value(&mut self, value: &str) {
-        // match &self.shared_child {
-        //     Ok(child) => {
-        //         let mut stdin = child.take_stdin().expect("Failed to open stdin");
-        //         stdin
-        //             .write_all(value.as_bytes())
-        //             .expect("Failed to write to stdin");
-        //     }
-        //     Err(error) => eprintln!("{}", error),
-        // }
+        match &self.shared_child {
+            Ok(child) => {
+                // let mut stdin = child.take_stdin().expect("Failed to open stdin");
+                // stdin
+                //     .write_all(value.as_bytes())
+                //     .expect("Failed to write to stdin");
+            }
+            Err(error) => eprintln!("{}", error),
+        }
     }
 
     fn show_output(&mut self) {
-        // let output = self.command.output();
-        // match output {
-        //     Ok(output) => {
-        //         println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-        //     }
-        //     Err(error) => eprintln!("{}", error),
-        // }
+        let output = self.command.output();
+        match output {
+            Ok(output) => {
+                println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+            }
+            Err(error) => eprintln!("{}", error),
+        }
     }
 
     fn is_last_success(&mut self) -> bool {
-        // self.command.status().expect("SUCCESS FAIL").success()
-        true
+        self.command.status().expect("SUCCESS FAIL").success()
     }
 }
 
