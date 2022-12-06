@@ -3,7 +3,9 @@ use shared_child::SharedChild;
 use std::fs;
 use std::io;
 use std::io::Error;
+use std::io::Write;
 use std::process::Command;
+use std::process::Stdio;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -258,11 +260,11 @@ fn edit_option(json_data: &mut FayData) {
 fn run_commands(commands: &CommandData) {
     struct CommandChild {
         command: Command,
-        child: Result<SharedChild, Error>,
+        shared_child: Result<SharedChild, Error>,
     }
 
     impl CommandChild {
-        pub fn new() -> CommandChild {
+        fn new() -> CommandChild {
             let windows_os = "windows";
             let command_types = {
                 if windows_os == std::env::consts::OS {
@@ -275,17 +277,60 @@ fn run_commands(commands: &CommandData) {
             let mut command = Command::new(command_types.0);
             command.arg(command_types.1);
 
+            command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+
             CommandChild {
                 command: command,
-                child: Err(Error::new(io::ErrorKind::Other, "IDK")),
+                shared_child: Err(Error::new(io::ErrorKind::Other, "IDK")),
             }
         }
 
-        pub fn spawn(&mut self) {
+        fn spawn(&mut self, arg: &String) {
+            self.command.arg(arg);
             let child = SharedChild::spawn(&mut self.command);
-            self.child = child;
+            self.shared_child = child;
+        }
+
+        fn set_dir(&mut self, dir: &str) {
+            self.command.current_dir(dir);
+        }
+
+        fn input_value(&mut self, value: &str) {
+            match &self.shared_child {
+                Ok(child) => {
+                    let mut stdin = child.take_stdin().expect("Failed to open stdin");
+                    stdin
+                        .write_all(value.as_bytes())
+                        .expect("Failed to write to stdin");
+                }
+                Err(_) => todo!(),
+            }
+        }
+
+        fn show_output(&mut self) {
+            match &self.shared_child {
+                Ok(child) => {
+                    let output = child.take_stdout().expect("Hello");
+                    println!(
+                        "{}",
+                        std::io::read_to_string(output)
+                            .unwrap_or(String::from(""))
+                            .as_str()
+                    );
+                }
+                Err(_) => todo!(),
+            }
+        }
+
+        fn is_last_success(&mut self) -> bool {
+            self.command.status().unwrap().success()
         }
     }
+
+    let cc = CommandChild::new();
 
     for command in &commands.execs {
         //
