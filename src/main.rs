@@ -18,6 +18,78 @@ struct CommandData {
     execs: Vec<String>,
 }
 
+struct CommandChild {
+    command: Command,
+    shared_child: Result<SharedChild, Error>,
+}
+
+impl CommandChild {
+    fn new() -> CommandChild {
+        let windows_os = "windows";
+        let command_types = {
+            if windows_os == std::env::consts::OS {
+                ("cmd", "/C")
+            } else {
+                ("sh", "-c")
+            }
+        };
+
+        let mut command = Command::new(command_types.0);
+        command.arg(command_types.1);
+
+        command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        CommandChild {
+            command: command,
+            shared_child: Err(Error::new(io::ErrorKind::Other, "IDK")),
+        }
+    }
+
+    fn spawn(&mut self, arg: &String) {
+        self.command.arg(arg);
+        let child = SharedChild::spawn(&mut self.command);
+        self.shared_child = child;
+    }
+
+    fn set_dir(&mut self, dir: &str) {
+        self.command.current_dir(dir);
+    }
+
+    fn input_value(&mut self, value: &str) {
+        match &self.shared_child {
+            Ok(child) => {
+                let mut stdin = child.take_stdin().expect("Failed to open stdin");
+                stdin
+                    .write_all(value.as_bytes())
+                    .expect("Failed to write to stdin");
+            }
+            Err(_) => todo!(),
+        }
+    }
+
+    fn show_output(&mut self) {
+        match &self.shared_child {
+            Ok(child) => {
+                let output = child.take_stdout().expect("Hello");
+                println!(
+                    "{}",
+                    std::io::read_to_string(output)
+                        .unwrap_or(String::from(""))
+                        .as_str()
+                );
+            }
+            Err(_) => todo!(),
+        }
+    }
+
+    fn is_last_success(&mut self) -> bool {
+        self.command.status().expect("SUCCESS FAIL").success()
+    }
+}
+
 const FILEPATH: &str = "./faydata.json";
 const INPUT_STRING_ERROR_MESSAGE: &str = "Please enter a valid string";
 const INPUT_NUMBER_ERROR_MESSAGE: &str = "Please enter a valid number";
@@ -258,82 +330,17 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    struct CommandChild {
-        command: Command,
-        shared_child: Result<SharedChild, Error>,
-    }
-
-    impl CommandChild {
-        fn new() -> CommandChild {
-            let windows_os = "windows";
-            let command_types = {
-                if windows_os == std::env::consts::OS {
-                    ("cmd", "/C")
-                } else {
-                    ("sh", "-c")
-                }
-            };
-
-            let mut command = Command::new(command_types.0);
-            command.arg(command_types.1);
-
-            command
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-
-            CommandChild {
-                command: command,
-                shared_child: Err(Error::new(io::ErrorKind::Other, "IDK")),
-            }
-        }
-
-        fn spawn(&mut self, arg: &String) {
-            self.command.arg(arg);
-            let child = SharedChild::spawn(&mut self.command);
-            self.shared_child = child;
-        }
-
-        fn set_dir(&mut self, dir: &str) {
-            self.command.current_dir(dir);
-        }
-
-        fn input_value(&mut self, value: &str) {
-            match &self.shared_child {
-                Ok(child) => {
-                    let mut stdin = child.take_stdin().expect("Failed to open stdin");
-                    stdin
-                        .write_all(value.as_bytes())
-                        .expect("Failed to write to stdin");
-                }
-                Err(_) => todo!(),
-            }
-        }
-
-        fn show_output(&mut self) {
-            match &self.shared_child {
-                Ok(child) => {
-                    let output = child.take_stdout().expect("Hello");
-                    println!(
-                        "{}",
-                        std::io::read_to_string(output)
-                            .unwrap_or(String::from(""))
-                            .as_str()
-                    );
-                }
-                Err(_) => todo!(),
-            }
-        }
-
-        fn is_last_success(&mut self) -> bool {
-            self.command.status().unwrap().success()
-        }
-    }
-
-    let cc = CommandChild::new();
+    let mut command_child = CommandChild::new();
+    let mut dir = "";
 
     for command in &commands.execs {
-        //
+        if command.starts_with("cd ") {
+            dir = command.split(" ").last().unwrap();
+        }
+
+        if command_child.is_last_success() {
+            
+        }
     }
 }
 
