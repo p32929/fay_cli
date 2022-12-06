@@ -1,10 +1,9 @@
 use miniserde::{json, Deserialize, Serialize};
+use shared_child::SharedChild;
 use std::fs;
 use std::io;
-use std::io::Write;
-use std::process::Child;
+use std::io::Error;
 use std::process::Command;
-use std::process::Stdio;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -15,91 +14,6 @@ struct FayData {
 struct CommandData {
     name: String,
     execs: Vec<String>,
-}
-
-struct CommandChild {
-    command: Command,
-    spawned_child: Option<Child>,
-}
-
-fn make_command() -> Command {
-    let windows_os = "windows";
-    let command_types = {
-        if windows_os == std::env::consts::OS {
-            ("cmd", "/C")
-        } else {
-            ("sh", "-c")
-        }
-    };
-
-    let mut proc_command = Command::new(command_types.0);
-    proc_command.arg(command_types.1);
-    proc_command
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    proc_command
-}
-
-impl CommandChild {
-    pub fn new() -> CommandChild {
-        // let proc_command = ;
-        // let child = proc_command.spawn().unwrap();
-
-        CommandChild {
-            command: make_command(),
-            spawned_child: None,
-        }
-    }
-
-    pub fn renew_command(&mut self, dir: &str) {
-        self.command = make_command();
-        if !dir.is_empty() {
-            self.command.current_dir(dir);
-        }
-    }
-
-    pub fn spawn_command(&mut self, command: &str) {
-        self.command.arg(command);
-        self.spawned_child = Some(self.command.spawn().unwrap());
-    }
-
-    pub fn is_command_success(&mut self) -> bool {
-        let status = self.command.status();
-        match status {
-            Ok(st) => {
-                return st.success();
-            }
-            Err(_) => {
-                return false;
-            }
-        }
-
-        // .expect("STERR")
-    }
-
-    pub fn input(&mut self, input: &str) {
-        match &self.spawned_child {
-            Some(child) => {
-                let mut stdin = child.stdin.as_ref().expect("Failed to open stdin");
-                stdin
-                    .write_all(input.as_bytes())
-                    .expect("Failed to write to stdin");
-            }
-            None => todo!(),
-        }
-    }
-
-    pub fn show_output(&self) {
-        // let output = self.spawned_child.unwrap().stdout.as_mut().expect("Hello");
-
-        // let output = self
-        //     .spawned_child
-        //     .unwrap()
-        //     .wait_with_output()
-        //     .expect("Failed to read stdout");
-        // print!("{}", String::from_utf8_lossy(&output.stdout));
-    }
 }
 
 const FILEPATH: &str = "./faydata.json";
@@ -342,23 +256,39 @@ fn edit_option(json_data: &mut FayData) {
 // }
 
 fn run_commands(commands: &CommandData) {
-    let mut dir = "";
-    let mut command_child = CommandChild::new();
+    struct CommandChild {
+        command: Command,
+        child: Result<SharedChild, Error>,
+    }
+
+    impl CommandChild {
+        pub fn new() -> CommandChild {
+            let windows_os = "windows";
+            let command_types = {
+                if windows_os == std::env::consts::OS {
+                    ("cmd", "/C")
+                } else {
+                    ("sh", "-c")
+                }
+            };
+
+            let mut command = Command::new(command_types.0);
+            command.arg(command_types.1);
+
+            CommandChild {
+                command: command,
+                child: Err(Error::new(io::ErrorKind::Other, "IDK")),
+            }
+        }
+
+        pub fn spawn(&mut self) {
+            let child = SharedChild::spawn(&mut self.command);
+            self.child = child;
+        }
+    }
 
     for command in &commands.execs {
-        println!("\n> {}", command);
-
-        if command.starts_with("cd ") {
-            dir = command.split(" ").last().unwrap_or("");
-        }
-
-        if command_child.is_command_success() {
-            command_child.renew_command(dir);
-            command_child.spawn_command(command);
-        } else {
-            command_child.input(command);
-        }
-        command_child.show_output();
+        //
     }
 }
 
