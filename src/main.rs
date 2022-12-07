@@ -21,6 +21,7 @@ struct CommandData {
 struct CommandChild {
     command: Command,
     spawned_result: Result<Child, Error>,
+    is_last_input: bool,
 }
 
 fn get_new_command() -> Command {
@@ -49,6 +50,7 @@ impl CommandChild {
         CommandChild {
             command: get_new_command(),
             spawned_result: Err(Error::new(io::ErrorKind::Other, "IDK")),
+            is_last_input: false,
         }
     }
 
@@ -64,8 +66,10 @@ impl CommandChild {
 
     fn respawn(&mut self) {
         // self.command.arg("");
-        let child = self.command.spawn();
-        self.spawned_result = child;
+        if !self.is_last_input {
+            let child = self.command.spawn();
+            self.spawned_result = child;
+        }
     }
 
     fn set_dir(&mut self, dir: &str) {
@@ -76,6 +80,8 @@ impl CommandChild {
 
     fn input_value(&mut self, value: &str) {
         self.respawn();
+        self.is_last_input = true;
+
         let child = self.spawned_result.as_mut().unwrap();
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
 
@@ -101,8 +107,12 @@ impl CommandChild {
         }
     }
 
-    fn dropped_output(mut self) {
-        let mut output = self.spawned_result.expect("EEE").wait_with_output().expect("Failed to read stdout");
+    fn dropped_output(self) {
+        let output = self
+            .spawned_result
+            .expect("EEE")
+            .wait_with_output()
+            .expect("Failed to read stdout");
         print!("{}", String::from_utf8_lossy(&output.stdout));
     }
 
@@ -376,7 +386,6 @@ fn string_to_static_str(s: String) -> &'static str {
 fn run_commands(commands: &CommandData) {
     let mut command_child = CommandChild::new();
     let mut dir = "";
-    let mut is_last_iter_input = false;
 
     for command in &commands.execs {
         if command.starts_with("cd ") {
@@ -387,16 +396,14 @@ fn run_commands(commands: &CommandData) {
             if command_child.is_last_success() {
                 command_child.renew_command();
                 command_child.spawn(command);
-                command_child.show_output();
-                is_last_iter_input = false;
             } else {
                 command_child.input_value(&command);
-                is_last_iter_input = true;
             }
+            command_child.show_output();
         }
     }
 
-    if command_child.is_last_success() {
+    if command_child.is_last_input {
         // command_child.show_output();
         command_child.dropped_output();
     }
