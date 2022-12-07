@@ -392,13 +392,13 @@ fn run_commands(commands: &CommandData) {
         if command.starts_with("cd ") {
             dir = command.split(" ").last().unwrap_or("");
         } else {
-            command_child.set_dir(dir);
-
             if command_child.is_last_success() {
                 command_child.renew_command();
+                command_child.set_dir(dir);
                 command_child.spawn(command);
                 command_child.show_output();
             } else {
+                command_child.set_dir(dir);
                 command_child.input_value(&command);
             }
         }
