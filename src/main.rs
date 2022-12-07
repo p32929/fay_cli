@@ -380,9 +380,9 @@ fn edit_option(json_data: &mut FayData) {
     }
 }
 
-fn string_to_static_str(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
+// fn string_to_static_str(s: String) -> &'static str {
+//     Box::leak(s.into_boxed_str())
+// }
 
 fn run_commands(commands: &CommandData) {
     let mut command_child = CommandChild::new();
