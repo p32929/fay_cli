@@ -396,7 +396,7 @@ fn run_commands(commands: &CommandData) {
         }
     }
 
-    if is_last_iter_input {
+    if command_child.is_last_success() {
         // command_child.show_output();
         command_child.dropped_output();
     }
