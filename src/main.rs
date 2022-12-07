@@ -107,7 +107,7 @@ impl CommandChild {
         }
     }
 
-    fn dropped_output(self) {
+    fn show_dropped_output(self) {
         let output = self
             .spawned_result
             .expect("EEE")
@@ -405,7 +405,7 @@ fn run_commands(commands: &CommandData) {
 
     if command_child.is_last_input {
         // command_child.show_output();
-        command_child.dropped_output();
+        command_child.show_dropped_output();
     }
 }
 
