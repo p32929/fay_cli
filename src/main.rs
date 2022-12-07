@@ -6,6 +6,8 @@ use std::io::Write;
 use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 struct FayData {
@@ -401,6 +403,7 @@ fn run_commands(commands: &CommandData) {
                 command_child.set_dir(dir);
                 command_child.input_value(&command);
             }
+            sleep(Duration::from_secs(1));
         }
     }
 
@@ -408,7 +411,6 @@ fn run_commands(commands: &CommandData) {
     //     // command_child.show_output();
     //     command_child.show_dropped_output();
     // }
-
     command_child.show_long_lived_output();
 }
 
