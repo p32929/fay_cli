@@ -21,7 +21,7 @@ struct CommandData {
 struct CommandChild {
     command: Command,
     spawned_result: Result<Child, Error>,
-    lsc: String
+    lsc: String,
 }
 
 fn get_new_command() -> Command {
@@ -50,7 +50,7 @@ impl CommandChild {
         CommandChild {
             command: get_new_command(),
             spawned_result: Err(Error::new(io::ErrorKind::Other, "IDK")),
-            lsc: "".to_string()
+            lsc: "".to_string(),
         }
     }
 
@@ -74,7 +74,7 @@ impl CommandChild {
     fn input_value(&mut self, value: &str) {
         let child = self.spawned_result.as_mut().unwrap();
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        
+
         // let static_val = string_to_static_str(String::from(value));
         // std::thread::spawn(move || {
         //     stdin
@@ -104,12 +104,24 @@ impl CommandChild {
         match status {
             Ok(status) => {
                 return status.success();
-            },
+            }
             Err(error) => {
                 eprintln!("{}", error);
                 return false;
             }
         }
+    }
+
+    fn print_command(&self) {
+        let abc = format!(
+            "{} {:?}",
+            self.command
+                .get_envs()
+                .map(|(key, val)| format!("{:?}={:?}", key, val))
+                .fold(String::new(), |a, b| a + &b),
+            self.command
+        );
+        println!("{}", abc);
     }
 }
 
