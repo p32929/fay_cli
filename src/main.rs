@@ -108,7 +108,7 @@ impl CommandChild {
         }
     }
 
-    fn show_dropped_output(self) {
+    fn show_long_lived_output(self) {
         let output = self
             .spawned_result
             .expect("EEE")
@@ -409,7 +409,7 @@ fn run_commands(commands: &CommandData) {
     //     command_child.show_dropped_output();
     // }
 
-    command_child.show_dropped_output();
+    command_child.show_long_lived_output();
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
