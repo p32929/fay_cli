@@ -21,7 +21,6 @@ struct CommandData {
 struct CommandChild {
     command: Command,
     spawned_result: Result<Child, Error>,
-    lsc: String,
 }
 
 fn get_new_command() -> Command {
@@ -50,7 +49,6 @@ impl CommandChild {
         CommandChild {
             command: get_new_command(),
             spawned_result: Err(Error::new(io::ErrorKind::Other, "IDK")),
-            lsc: "".to_string(),
         }
     }
 
@@ -62,7 +60,12 @@ impl CommandChild {
         self.command.arg(arg);
         let child = self.command.spawn();
         self.spawned_result = child;
-        self.lsc = arg.to_string();
+    }
+
+    fn respawn(&mut self) {
+        // self.command.arg("");
+        let child = self.command.spawn();
+        self.spawned_result = child;
     }
 
     fn set_dir(&mut self, dir: &str) {
@@ -72,6 +75,7 @@ impl CommandChild {
     }
 
     fn input_value(&mut self, value: &str) {
+        self.respawn();
         let child = self.spawned_result.as_mut().unwrap();
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
 
@@ -95,6 +99,11 @@ impl CommandChild {
             }
             Err(error) => eprintln!("{}", error),
         }
+    }
+
+    fn dropped_output(mut self) {
+        let mut output = self.spawned_result.expect("EEE").wait_with_output().expect("Failed to read stdout");
+        print!("{}", String::from_utf8_lossy(&output.stdout));
     }
 
     fn is_last_success(&mut self) -> bool {
@@ -388,7 +397,8 @@ fn run_commands(commands: &CommandData) {
     }
 
     if is_last_iter_input {
-        command_child.show_output();
+        // command_child.show_output();
+        command_child.dropped_output();
     }
 }
 
