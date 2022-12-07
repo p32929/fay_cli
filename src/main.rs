@@ -397,10 +397,10 @@ fn run_commands(commands: &CommandData) {
             if command_child.is_last_success() {
                 command_child.renew_command();
                 command_child.spawn(command);
+                command_child.show_output();
             } else {
                 command_child.input_value(&command);
             }
-            command_child.show_output();
         }
     }
 
