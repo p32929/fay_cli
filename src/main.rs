@@ -404,10 +404,12 @@ fn run_commands(commands: &CommandData) {
         }
     }
 
-    if command_child.is_last_input {
-        // command_child.show_output();
-        command_child.show_dropped_output();
-    }
+    // if command_child.is_last_input {
+    //     // command_child.show_output();
+    //     command_child.show_dropped_output();
+    // }
+
+    command_child.show_dropped_output();
 }
 
 fn start_command_selection(fay_data: &mut FayData) {
