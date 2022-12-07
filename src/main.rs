@@ -465,8 +465,9 @@ fn start_command_selection(fay_data: &mut FayData) {
 }
 
 fn main() {
+    let version = env!("CARGO_PKG_VERSION");
     println!(":::::::::::::::::::");
-    println!(">>>>>>  Fay  <<<<<<");
+    println!(">>>  Fay {}  <<<", version);
     println!(":::::::::::::::::::");
     println!("\n> Saved commands <");
     let mut fay_data: FayData = get_saved_json_data();
