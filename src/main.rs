@@ -20,38 +20,49 @@ struct CommandData {
 
 struct CommandChild {
     command: Command,
-    shared_child: Result<Child, Error>,
+    spawned_result: Result<Child, Error>,
+    lsc: String
+}
+
+fn get_new_command() -> Command {
+    let windows_os = "windows";
+    let command_types = {
+        if windows_os == std::env::consts::OS {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        }
+    };
+
+    let mut command = Command::new(command_types.0);
+    command.arg(command_types.1);
+
+    command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    command
 }
 
 impl CommandChild {
     fn new() -> CommandChild {
-        let windows_os = "windows";
-        let command_types = {
-            if windows_os == std::env::consts::OS {
-                ("cmd", "/C")
-            } else {
-                ("sh", "-c")
-            }
-        };
-
-        let mut command = Command::new(command_types.0);
-        command.arg(command_types.1);
-
-        command
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-
         CommandChild {
-            command: command,
-            shared_child: Err(Error::new(io::ErrorKind::Other, "IDK")),
+            command: get_new_command(),
+            spawned_result: Err(Error::new(io::ErrorKind::Other, "IDK")),
+            lsc: "".to_string()
         }
+    }
+
+    fn renew_command(&mut self) {
+        self.command = get_new_command();
     }
 
     fn spawn(&mut self, arg: &String) {
         self.command.arg(arg);
         let child = self.command.spawn();
-        self.shared_child = child;
+        self.spawned_result = child;
+        self.lsc = arg.to_string();
     }
 
     fn set_dir(&mut self, dir: &str) {
@@ -61,15 +72,19 @@ impl CommandChild {
     }
 
     fn input_value(&mut self, value: &str) {
-        let child = self.shared_child.as_mut().unwrap();
-        let mut stdin = child.stdin.take().expect("Failed to open stdin");
-        let static_val = string_to_static_str(String::from(value));
+        let child = self.spawned_result.as_mut().unwrap();
+        let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+        
+        // let static_val = string_to_static_str(String::from(value));
+        // std::thread::spawn(move || {
+        //     stdin
+        //         .write_all(string_to_static_str(static_val.to_string()).as_bytes())
+        //         .expect("Failed to write to stdin");
+        // });
 
-        std::thread::spawn(move || {
-            stdin
-                .write_all(string_to_static_str(static_val.to_string()).as_bytes())
-                .expect("Failed to write to stdin");
-        });
+        stdin
+            .write_all(value.as_bytes())
+            .expect("Failed to write to stdin");
     }
 
     fn show_output(&mut self) {
@@ -83,7 +98,18 @@ impl CommandChild {
     }
 
     fn is_last_success(&mut self) -> bool {
-        self.command.status().expect("SUCCESS FAIL").success()
+        // self.command.status().expect("SUCCESS FAIL")
+
+        let status = self.command.status();
+        match status {
+            Ok(status) => {
+                return status.success();
+            },
+            Err(error) => {
+                eprintln!("{}", error);
+                return false;
+            }
+        }
     }
 }
 
@@ -333,12 +359,12 @@ fn run_commands(commands: &CommandData) {
 
     for command in &commands.execs {
         if command.starts_with("cd ") {
-            dir = command.split(" ").last().unwrap();
+            dir = command.split(" ").last().unwrap_or("");
         } else {
             command_child.set_dir(dir);
 
             if command_child.is_last_success() {
-                command_child = CommandChild::new();
+                command_child.renew_command();
                 command_child.spawn(command);
                 command_child.show_output();
                 is_last_iter_input = false;
