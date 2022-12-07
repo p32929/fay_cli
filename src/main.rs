@@ -92,8 +92,9 @@ impl CommandChild {
         //         .expect("Failed to write to stdin");
         // });
 
+        let formatted_value = format!("{}\n", value);
         stdin
-            .write_all(value.as_bytes())
+            .write_all(formatted_value.as_bytes())
             .expect("Failed to write to stdin");
     }
 
